@@ -24,10 +24,10 @@ const insertUserSQL = `INSERT INTO users (
 );`
 
 type InsertUserParams struct {
-	ID        pgtype.Text
-	CreatedAt pgtype.Timestamptz
-	UpdatedAt pgtype.Timestamptz
-	Username  pgtype.Text
+	ID        pgtype.Text        `json:"id"`
+	CreatedAt pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt pgtype.Timestamptz `json:"updated_at"`
+	Username  pgtype.Text        `json:"username"`
 }
 
 // InsertUser implements Querier.InsertUser.

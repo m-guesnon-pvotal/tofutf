@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
+
+	"github.com/jackc/pgtype"
 	"github.com/tofutf/tofutf/internal"
 	"github.com/tofutf/tofutf/internal/resource"
 	"github.com/tofutf/tofutf/internal/sql"
@@ -105,12 +106,12 @@ func (db *pgdb) listVersions(ctx context.Context, workspaceID string, opts resou
 	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
 
-	q.FindStateVersionsByWorkspaceIDBatch(batch, pggen.FindStateVersionsByWorkspaceIDParams{
+	q.FindStateVersionsByWorkspaceID(ctx, pggen.FindStateVersionsByWorkspaceIDParams{
 		WorkspaceID: sql.String(workspaceID),
 		Limit:       opts.GetLimit(),
 		Offset:      opts.GetOffset(),
 	})
-	q.CountStateVersionsByWorkspaceIDBatch(batch, sql.String(workspaceID))
+	q.CountStateVersionsByWorkspaceID(ctx, sql.String(workspaceID))
 
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()

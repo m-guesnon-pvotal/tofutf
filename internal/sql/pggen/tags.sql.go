@@ -23,9 +23,9 @@ const insertTagSQL = `INSERT INTO tags (
 ;`
 
 type InsertTagParams struct {
-	TagID            pgtype.Text
-	Name             pgtype.Text
-	OrganizationName pgtype.Text
+	TagID            pgtype.Text `json:"tag_id"`
+	Name             pgtype.Text `json:"name"`
+	OrganizationName pgtype.Text `json:"organization_name"`
 }
 
 // InsertTag implements Querier.InsertTag.
@@ -139,9 +139,9 @@ OFFSET $3
 ;`
 
 type FindTagsParams struct {
-	OrganizationName pgtype.Text
-	Limit            pgtype.Int8
-	Offset           pgtype.Int8
+	OrganizationName pgtype.Text `json:"organization_name"`
+	Limit            pgtype.Int8 `json:"limit"`
+	Offset           pgtype.Int8 `json:"offset"`
 }
 
 type FindTagsRow struct {
@@ -214,9 +214,9 @@ OFFSET $3
 ;`
 
 type FindWorkspaceTagsParams struct {
-	WorkspaceID pgtype.Text
-	Limit       pgtype.Int8
-	Offset      pgtype.Int8
+	WorkspaceID pgtype.Text `json:"workspace_id"`
+	Limit       pgtype.Int8 `json:"limit"`
+	Offset      pgtype.Int8 `json:"offset"`
 }
 
 type FindWorkspaceTagsRow struct {

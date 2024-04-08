@@ -28,12 +28,12 @@ const insertGPGKeySQL = `INSERT INTO registry_gpg_keys (
 );`
 
 type InsertGPGKeyParams struct {
-	ID               pgtype.Text
-	OrganizationName pgtype.Text
-	AsciiArmor       pgtype.Text
-	KeyID            pgtype.Text
-	CreatedAt        pgtype.Timestamptz
-	UpdatedAt        pgtype.Timestamptz
+	ID               pgtype.Text        `json:"id"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
+	AsciiArmor       pgtype.Text        `json:"ascii_armor"`
+	KeyID            pgtype.Text        `json:"key_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
 }
 
 // InsertGPGKey implements Querier.InsertGPGKey.
@@ -67,10 +67,10 @@ WHERE key_id = $3 AND
     organization_name = $4;`
 
 type UpdateGPGKeyParams struct {
-	NewOrganizationName pgtype.Text
-	UpdatedAt           pgtype.Timestamptz
-	KeyID               pgtype.Text
-	OrganizationName    pgtype.Text
+	NewOrganizationName pgtype.Text        `json:"new_organization_name"`
+	UpdatedAt           pgtype.Timestamptz `json:"updated_at"`
+	KeyID               pgtype.Text        `json:"key_id"`
+	OrganizationName    pgtype.Text        `json:"organization_name"`
 }
 
 // UpdateGPGKey implements Querier.UpdateGPGKey.

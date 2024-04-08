@@ -11,5 +11,5 @@ import (
 )
 
 func PrintError(err error) {
-	fmt.Fprintf(os.Stderr, "%s %s\n", color.HiRedString("Error:"), err.Error())
+	fmt.Fprintf(os.Stdout, "%s %s\n", color.HiRedString("Error:"), err.Error())
 }

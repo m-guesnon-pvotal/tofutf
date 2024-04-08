@@ -30,13 +30,13 @@ const insertModuleSQL = `INSERT INTO modules (
 );`
 
 type InsertModuleParams struct {
-	ID               pgtype.Text
-	CreatedAt        pgtype.Timestamptz
-	UpdatedAt        pgtype.Timestamptz
-	Name             pgtype.Text
-	Provider         pgtype.Text
-	Status           pgtype.Text
-	OrganizationName pgtype.Text
+	ID               pgtype.Text        `json:"id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt        pgtype.Timestamptz `json:"updated_at"`
+	Name             pgtype.Text        `json:"name"`
+	Provider         pgtype.Text        `json:"provider"`
+	Status           pgtype.Text        `json:"status"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
 }
 
 // InsertModule implements Querier.InsertModule.
@@ -81,12 +81,12 @@ const insertModuleVersionSQL = `INSERT INTO module_versions (
 RETURNING *;`
 
 type InsertModuleVersionParams struct {
-	ModuleVersionID pgtype.Text
-	Version         pgtype.Text
-	CreatedAt       pgtype.Timestamptz
-	UpdatedAt       pgtype.Timestamptz
-	ModuleID        pgtype.Text
-	Status          pgtype.Text
+	ModuleVersionID pgtype.Text        `json:"module_version_id"`
+	Version         pgtype.Text        `json:"version"`
+	CreatedAt       pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt       pgtype.Timestamptz `json:"updated_at"`
+	ModuleID        pgtype.Text        `json:"module_id"`
+	Status          pgtype.Text        `json:"status"`
 }
 
 type InsertModuleVersionRow struct {
@@ -242,9 +242,9 @@ AND   m.provider = $3
 ;`
 
 type FindModuleByNameParams struct {
-	OrganizationName pgtype.Text
-	Name             pgtype.Text
-	Provider         pgtype.Text
+	OrganizationName pgtype.Text `json:"organization_name"`
+	Name             pgtype.Text `json:"name"`
+	Provider         pgtype.Text `json:"provider"`
 }
 
 type FindModuleByNameRow struct {
@@ -629,9 +629,9 @@ RETURNING *
 ;`
 
 type UpdateModuleVersionStatusByIDParams struct {
-	Status          pgtype.Text
-	StatusError     pgtype.Text
-	ModuleVersionID pgtype.Text
+	Status          pgtype.Text `json:"status"`
+	StatusError     pgtype.Text `json:"status_error"`
+	ModuleVersionID pgtype.Text `json:"module_version_id"`
 }
 
 type UpdateModuleVersionStatusByIDRow struct {

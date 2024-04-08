@@ -54,10 +54,10 @@ RETURNING run_id
 ;`
 
 type UpdateAppliedChangesByIDParams struct {
-	Additions    pgtype.Int4
-	Changes      pgtype.Int4
-	Destructions pgtype.Int4
-	RunID        pgtype.Text
+	Additions    pgtype.Int4 `json:"additions"`
+	Changes      pgtype.Int4 `json:"changes"`
+	Destructions pgtype.Int4 `json:"destructions"`
+	RunID        pgtype.Text `json:"run_id"`
 }
 
 // UpdateAppliedChangesByID implements Querier.UpdateAppliedChangesByID.

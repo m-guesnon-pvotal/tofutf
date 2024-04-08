@@ -27,10 +27,10 @@ const insertTeamTokenSQL = `INSERT INTO team_tokens (
       expiry        = $4;`
 
 type InsertTeamTokenParams struct {
-	TeamTokenID pgtype.Text
-	CreatedAt   pgtype.Timestamptz
-	TeamID      pgtype.Text
-	Expiry      pgtype.Timestamptz
+	TeamTokenID pgtype.Text        `json:"team_token_id"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	TeamID      pgtype.Text        `json:"team_id"`
+	Expiry      pgtype.Timestamptz `json:"expiry"`
 }
 
 // InsertTeamToken implements Querier.InsertTeamToken.

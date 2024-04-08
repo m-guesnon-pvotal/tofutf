@@ -3,8 +3,9 @@ package organization
 import (
 	"context"
 
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
+
+	"github.com/jackc/pgtype"
 	"github.com/tofutf/tofutf/internal"
 	"github.com/tofutf/tofutf/internal/resource"
 	"github.com/tofutf/tofutf/internal/sql"

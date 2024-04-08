@@ -36,16 +36,16 @@ const insertOrganizationSQL = `INSERT INTO organizations (
 );`
 
 type InsertOrganizationParams struct {
-	ID                         pgtype.Text
-	CreatedAt                  pgtype.Timestamptz
-	UpdatedAt                  pgtype.Timestamptz
-	Name                       pgtype.Text
-	Email                      pgtype.Text
-	CollaboratorAuthPolicy     pgtype.Text
-	CostEstimationEnabled      pgtype.Bool
-	SessionRemember            pgtype.Int4
-	SessionTimeout             pgtype.Int4
-	AllowForceDeleteWorkspaces pgtype.Bool
+	ID                         pgtype.Text        `json:"id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	Name                       pgtype.Text        `json:"name"`
+	Email                      pgtype.Text        `json:"email"`
+	CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
+	CostEstimationEnabled      pgtype.Bool        `json:"cost_estimation_enabled"`
+	SessionRemember            pgtype.Int4        `json:"session_remember"`
+	SessionTimeout             pgtype.Int4        `json:"session_timeout"`
+	AllowForceDeleteWorkspaces pgtype.Bool        `json:"allow_force_delete_workspaces"`
 }
 
 // InsertOrganization implements Querier.InsertOrganization.
@@ -238,9 +238,9 @@ LIMIT $2 OFFSET $3
 ;`
 
 type FindOrganizationsParams struct {
-	Names  []string
-	Limit  pgtype.Int8
-	Offset pgtype.Int8
+	Names  []string    `json:"names"`
+	Limit  pgtype.Int8 `json:"limit"`
+	Offset pgtype.Int8 `json:"offset"`
 }
 
 type FindOrganizationsRow struct {
@@ -349,15 +349,15 @@ WHERE name = $9
 RETURNING organization_id;`
 
 type UpdateOrganizationByNameParams struct {
-	NewName                    pgtype.Text
-	Email                      pgtype.Text
-	CollaboratorAuthPolicy     pgtype.Text
-	CostEstimationEnabled      pgtype.Bool
-	SessionRemember            pgtype.Int4
-	SessionTimeout             pgtype.Int4
-	AllowForceDeleteWorkspaces pgtype.Bool
-	UpdatedAt                  pgtype.Timestamptz
-	Name                       pgtype.Text
+	NewName                    pgtype.Text        `json:"new_name"`
+	Email                      pgtype.Text        `json:"email"`
+	CollaboratorAuthPolicy     pgtype.Text        `json:"collaborator_auth_policy"`
+	CostEstimationEnabled      pgtype.Bool        `json:"cost_estimation_enabled"`
+	SessionRemember            pgtype.Int4        `json:"session_remember"`
+	SessionTimeout             pgtype.Int4        `json:"session_timeout"`
+	AllowForceDeleteWorkspaces pgtype.Bool        `json:"allow_force_delete_workspaces"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	Name                       pgtype.Text        `json:"name"`
 }
 
 // UpdateOrganizationByName implements Querier.UpdateOrganizationByName.

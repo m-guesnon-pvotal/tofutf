@@ -29,8 +29,8 @@ func (db *pgdb) GetWorkspacePolicy(ctx context.Context, workspaceID string) (int
 	// Retrieve not only permissions but the workspace too, so that:
 	// (1) we ensure that workspace exists and return not found if not
 	// (2) we retrieve the name of the organization, which is part of a policy
-	q.FindWorkspaceByIDBatch(batch, sql.String(workspaceID))
-	q.FindWorkspacePermissionsByWorkspaceIDBatch(batch, sql.String(workspaceID))
+	q.FindWorkspaceByID(ctx, sql.String(workspaceID))
+	q.FindWorkspacePermissionsByWorkspaceID(ctx, sql.String(workspaceID))
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 

@@ -28,12 +28,12 @@ const insertStateVersionOutputSQL = `INSERT INTO state_version_outputs (
 );`
 
 type InsertStateVersionOutputParams struct {
-	ID             pgtype.Text
-	Name           pgtype.Text
-	Sensitive      pgtype.Bool
-	Type           pgtype.Text
-	Value          []byte
-	StateVersionID pgtype.Text
+	ID             pgtype.Text `json:"id"`
+	Name           pgtype.Text `json:"name"`
+	Sensitive      pgtype.Bool `json:"sensitive"`
+	Type           pgtype.Text `json:"type"`
+	Value          []byte      `json:"value"`
+	StateVersionID pgtype.Text `json:"state_version_id"`
 }
 
 // InsertStateVersionOutput implements Querier.InsertStateVersionOutput.

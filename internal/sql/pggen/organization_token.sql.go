@@ -27,10 +27,10 @@ const upsertOrganizationTokenSQL = `INSERT INTO organization_tokens (
       expiry                = $4;`
 
 type UpsertOrganizationTokenParams struct {
-	OrganizationTokenID pgtype.Text
-	CreatedAt           pgtype.Timestamptz
-	OrganizationName    pgtype.Text
-	Expiry              pgtype.Timestamptz
+	OrganizationTokenID pgtype.Text        `json:"organization_token_id"`
+	CreatedAt           pgtype.Timestamptz `json:"created_at"`
+	OrganizationName    pgtype.Text        `json:"organization_name"`
+	Expiry              pgtype.Timestamptz `json:"expiry"`
 }
 
 // UpsertOrganizationToken implements Querier.UpsertOrganizationToken.

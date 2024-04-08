@@ -24,10 +24,10 @@ const insertPhaseStatusTimestampSQL = `INSERT INTO phase_status_timestamps (
 );`
 
 type InsertPhaseStatusTimestampParams struct {
-	RunID     pgtype.Text
-	Phase     pgtype.Text
-	Status    pgtype.Text
-	Timestamp pgtype.Timestamptz
+	RunID     pgtype.Text        `json:"run_id"`
+	Phase     pgtype.Text        `json:"phase"`
+	Status    pgtype.Text        `json:"status"`
+	Timestamp pgtype.Timestamptz `json:"timestamp"`
 }
 
 // InsertPhaseStatusTimestamp implements Querier.InsertPhaseStatusTimestamp.
@@ -69,10 +69,10 @@ RETURNING chunk_id
 ;`
 
 type InsertLogChunkParams struct {
-	RunID  pgtype.Text
-	Phase  pgtype.Text
-	Chunk  []byte
-	Offset pgtype.Int4
+	RunID  pgtype.Text `json:"run_id"`
+	Phase  pgtype.Text `json:"phase"`
+	Chunk  []byte      `json:"chunk"`
+	Offset pgtype.Int4 `json:"offset"`
 }
 
 // InsertLogChunk implements Querier.InsertLogChunk.

@@ -4,8 +4,8 @@ GIT_COMMIT = $(shell git rev-parse HEAD)
 RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
 
 # Provide some sane defaults for connecting to postgres.
-PGPASSWORD ?= $(shell kubectl get secrets postgres-postgresql -oyaml | yq '.data["password"]' -r | base64 -d)
-PGUSER ?= tofutf
+PGPASSWORD ?= postgres
+PGUSER ?= postgres
 DBSTRING ?= postgres://$(PGUSER):$(PGPASSWORD)@localhost:5432/postgres
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
@@ -64,7 +64,7 @@ vet:
 # Install sql code generator
 .PHONY: install-pggen
 install-pggen:
-	@sh -c "which pggen > /dev/null || go install github.com/leg100/pggen/cmd/pggen@latest"
+	@sh -c "which pggen > /dev/null || go install github.com/jschaf/pggen/cmd/pggen@latest"
 
 .PHONY: install-air
 install-air:
@@ -77,6 +77,7 @@ sql: install-pggen
 		--postgres-connection $(DBSTRING) \
 		--query-glob 'internal/sql/queries/*.sql' \
 		--output-dir ./internal/sql/pggen \
+		--go-type 'inet=net.IPNet' \
 		--go-type 'text=github.com/jackc/pgtype.Text' \
 		--go-type 'int4=github.com/jackc/pgtype.Int4' \
 		--go-type 'int8=github.com/jackc/pgtype.Int8' \
@@ -146,5 +147,9 @@ publish:
 	helm push ./hack/charts/tofutf-$(VERSION).tgz oci://ghcr.io/tofutf/tofutf/charts
 
 publish-dev:
-	VERSION=dev ko build --local --base-import-paths -t dev ./cmd/tofutfd
-	VERSION=dev ko build --local --base-import-paths -t dev ./cmd/tofutf-agent
+	VERSION=dev ko build --local --base-import-paths --platform=linux/amd64 -t dev ./cmd/tofutfd
+	VERSION=dev ko build --local --base-import-paths --platform=linux/amd64 -t dev ./cmd/tofutf-agent
+
+docker:
+	docker buildx build --progress=plain --platform linux/amd64 -t tofutfd:dev -f Dockerfile.daemon .
+	docker buildx build --progress=plain --platform linux/amd64 -t tofutf-agent:dev -f Dockerfile.agent .

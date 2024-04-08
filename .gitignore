@@ -103,3 +103,4 @@ Session.vim
 # allow anything under testdata
 !**/testdata/**
 tmp
+.idea

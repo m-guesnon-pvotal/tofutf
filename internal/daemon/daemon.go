@@ -4,10 +4,12 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"time"
 
-	"github.com/go-logr/logr"
+	"github.com/tofutf/tofutf/internal/redis"
+
 	"github.com/gorilla/mux"
 	"github.com/tofutf/tofutf/internal"
 	"github.com/tofutf/tofutf/internal/agent"
@@ -23,7 +25,6 @@ import (
 	"github.com/tofutf/tofutf/internal/gpgkeys"
 	"github.com/tofutf/tofutf/internal/http"
 	"github.com/tofutf/tofutf/internal/http/html"
-	"github.com/tofutf/tofutf/internal/inmem"
 	"github.com/tofutf/tofutf/internal/loginserver"
 	"github.com/tofutf/tofutf/internal/logs"
 	"github.com/tofutf/tofutf/internal/module"
@@ -50,10 +51,10 @@ import (
 type (
 	Daemon struct {
 		Config
-		logr.Logger
 
 		*sql.DB
 
+		Logger        *slog.Logger
 		Organizations *organization.Service
 		Runs          *run.Service
 		Workspaces    *workspace.Service
@@ -88,7 +89,7 @@ type (
 // New builds a new daemon and establishes a connection to the database and
 // migrates it to the latest schema. Close() should be called to close this
 // connection.
-func New(ctx context.Context, logger *logr.Logger, cfg Config) (*Daemon, error) {
+func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Daemon, error) {
 	if cfg.DevMode {
 		logger.Info("enabled developer mode")
 	}
@@ -103,11 +104,11 @@ func New(ctx context.Context, logger *logr.Logger, cfg Config) (*Daemon, error) 
 	if err != nil {
 		return nil, fmt.Errorf("setting up web page renderer: %w", err)
 	}
-	cache, err := inmem.NewCache(*cfg.CacheConfig)
+	cache, err := redis.NewCache(*cfg.CacheConfig)
 	if err != nil {
 		return nil, err
 	}
-	logger.Info("started cache", "max_size", cfg.CacheConfig.Size, "ttl", cfg.CacheConfig.TTL)
+	logger.Info("started cache", "address", cfg.CacheConfig.Address, "ttl", cfg.CacheConfig.TTL)
 
 	var db *sql.DB
 	const maxRetries = 10
@@ -328,7 +329,7 @@ func New(ctx context.Context, logger *logr.Logger, cfg Config) (*Daemon, error) 
 	})
 
 	agentDaemon, err := agent.NewServerDaemon(
-		logger.WithValues("component", "agent"),
+		logger.With("component", "agent"),
 		*cfg.AgentConfig,
 		agent.ServerDaemonOptions{
 			WorkspaceService:            workspaceService,
@@ -501,8 +502,8 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 		d.System.SetHostname(internal.NormalizeAddress(listenAddress))
 	}
 
-	d.V(0).Info("set system hostname", "hostname", d.System.Hostname())
-	d.V(0).Info("set webhook hostname", "webhook_hostname", d.System.WebhookHostname())
+	d.Logger.Info("set system hostname", "hostname", d.System.Hostname())
+	d.Logger.Info("set webhook hostname", "webhook_hostname", d.System.WebhookHostname())
 
 	subsystems := []*Subsystem{
 		{
@@ -522,7 +523,7 @@ func (d *Daemon) Start(ctx context.Context, started chan struct{}) error {
 			DB:        d.DB,
 			LockID:    internal.Int64(run.ReporterLockID),
 			System: &run.Reporter{
-				Logger:          d.Logger.WithValues("component", "reporter"),
+				Logger:          d.Logger.With("component", "reporter"),
 				VCS:             d.VCSProviders,
 				HostnameService: d.System,
 				Workspaces:      d.Workspaces,

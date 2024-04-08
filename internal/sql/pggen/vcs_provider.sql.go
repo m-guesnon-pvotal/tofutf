@@ -30,13 +30,13 @@ const insertVCSProviderSQL = `INSERT INTO vcs_providers (
 );`
 
 type InsertVCSProviderParams struct {
-	VCSProviderID    pgtype.Text
-	CreatedAt        pgtype.Timestamptz
-	Name             pgtype.Text
-	VCSKind          pgtype.Text
-	Token            pgtype.Text
-	GithubAppID      pgtype.Int8
-	OrganizationName pgtype.Text
+	VCSProviderID    pgtype.Text        `json:"vcs_provider_id"`
+	CreatedAt        pgtype.Timestamptz `json:"created_at"`
+	Name             pgtype.Text        `json:"name"`
+	VCSKind          pgtype.Text        `json:"vcs_kind"`
+	Token            pgtype.Text        `json:"token"`
+	GithubAppID      pgtype.Int8        `json:"github_app_id"`
+	OrganizationName pgtype.Text        `json:"organization_name"`
 }
 
 // InsertVCSProvider implements Querier.InsertVCSProvider.
@@ -451,9 +451,9 @@ RETURNING *
 ;`
 
 type UpdateVCSProviderParams struct {
-	Name          pgtype.Text
-	Token         pgtype.Text
-	VCSProviderID pgtype.Text
+	Name          pgtype.Text `json:"name"`
+	Token         pgtype.Text `json:"token"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 }
 
 type UpdateVCSProviderRow struct {

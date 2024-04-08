@@ -22,9 +22,9 @@ const upsertWorkspacePermissionSQL = `INSERT INTO workspace_permissions (
 ) ON CONFLICT (workspace_id, team_id) DO UPDATE SET role = $3;`
 
 type UpsertWorkspacePermissionParams struct {
-	WorkspaceID pgtype.Text
-	TeamID      pgtype.Text
-	Role        pgtype.Text
+	WorkspaceID pgtype.Text `json:"workspace_id"`
+	TeamID      pgtype.Text `json:"team_id"`
+	Role        pgtype.Text `json:"role"`
 }
 
 // UpsertWorkspacePermission implements Querier.UpsertWorkspacePermission.

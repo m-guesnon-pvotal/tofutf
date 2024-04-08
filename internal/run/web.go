@@ -3,9 +3,9 @@ package run
 import (
 	"bytes"
 	"context"
+	"log/slog"
 	"net/http"
 
-	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/tofutf/tofutf/internal"
 	"github.com/tofutf/tofutf/internal/http/decode"
@@ -21,7 +21,7 @@ type (
 	webHandlers struct {
 		html.Renderer
 
-		logger     logr.Logger
+		logger     *slog.Logger
 		runs       webRunClient
 		workspaces webWorkspaceClient
 	}
@@ -81,6 +81,7 @@ func (h *webHandlers) createRun(w http.ResponseWriter, r *http.Request) {
 		Source:    SourceUI,
 	})
 	if err != nil {
+		h.logger.Error("failed to create run", "err", err)
 		html.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Workspace(params.WorkspaceID), http.StatusFound)
 		return
@@ -101,11 +102,13 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 
 	ws, err := h.workspaces.Get(r.Context(), params.WorkspaceID)
 	if err != nil {
+		h.logger.Error("failed to get workspace", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	policy, err := h.workspaces.GetPolicy(r.Context(), ws.ID)
 	if err != nil {
+		h.logger.Error("failed to get policy", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -117,11 +120,13 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 		},
 	})
 	if err != nil {
+		h.logger.Error("failed to list runs", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	user, err := internal.SubjectFromContext(r.Context())
 	if err != nil {
+		h.logger.Error("failed to get subject from context", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -149,17 +154,20 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
+		h.logger.Error("failed to decode run_id", "err", err)
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
+		h.logger.Error("failed to get run", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	ws, err := h.workspaces.Get(r.Context(), run.WorkspaceID)
 	if err != nil {
+		h.logger.Error("failed to get workspace", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -167,11 +175,13 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 	// Get existing logs thus far received for each phase.
 	planLogs, err := h.runs.getLogs(r.Context(), run.ID, internal.PlanPhase)
 	if err != nil {
+		h.logger.Error("failed to get plan logs", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	applyLogs, err := h.runs.getLogs(r.Context(), run.ID, internal.ApplyPhase)
 	if err != nil {
+		h.logger.Error("failed to get apply logs", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -194,12 +204,14 @@ func (h *webHandlers) get(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
+		h.logger.Error("failed to decode run_id", "err", err)
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
+		h.logger.Error("failed to get run", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -212,17 +224,20 @@ func (h *webHandlers) getWidget(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
+		h.logger.Error("failed to decode run_id", "err", err)
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
+		h.logger.Error("failed to get run", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 	err = h.runs.Delete(r.Context(), runID)
 	if err != nil {
+		h.logger.Error("failed to delete run", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -232,11 +247,13 @@ func (h *webHandlers) delete(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
+		h.logger.Error("failed to decode run_id", "err", err)
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	if err := h.runs.Cancel(r.Context(), runID); err != nil {
+		h.logger.Error("failed to cancel run", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -247,11 +264,13 @@ func (h *webHandlers) cancel(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
+		h.logger.Error("failed to decode run_id", "err", err)
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	if err := h.runs.ForceCancel(r.Context(), runID); err != nil {
+		h.logger.Error("failed to force cancel run", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -262,12 +281,14 @@ func (h *webHandlers) forceCancel(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
+		h.logger.Error("failed to decode run_id", "err", err)
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	err = h.runs.Apply(r.Context(), runID)
 	if err != nil {
+		h.logger.Error("failed to apply run", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -277,12 +298,14 @@ func (h *webHandlers) apply(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
+		h.logger.Error("failed to decode run_id", "err", err)
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	err = h.runs.Discard(r.Context(), runID)
 	if err != nil {
+		h.logger.Error("failed to discard run", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -292,12 +315,14 @@ func (h *webHandlers) discard(w http.ResponseWriter, r *http.Request) {
 func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 	runID, err := decode.Param("run_id", r)
 	if err != nil {
+		h.logger.Error("failed to decode run_id", "err", err)
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
 
 	run, err := h.runs.Get(r.Context(), runID)
 	if err != nil {
+		h.logger.Error("failed to get run", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -309,6 +334,7 @@ func (h *webHandlers) retry(w http.ResponseWriter, r *http.Request) {
 		Source:                 SourceUI,
 	})
 	if err != nil {
+		h.logger.Error("failed to create run", "err", err)
 		html.FlashError(w, err.Error())
 		http.Redirect(w, r, paths.Run(runID), http.StatusFound)
 		return
@@ -324,6 +350,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 		RunID       string `schema:"run_id"`
 	}
 	if err := decode.All(&params, r); err != nil {
+		h.logger.Error("failed to watch run", "err", err)
 		h.Error(w, err.Error(), http.StatusUnprocessableEntity)
 		return
 	}
@@ -332,6 +359,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 		WorkspaceID: internal.String(params.WorkspaceID),
 	})
 	if err != nil {
+		h.logger.Error("failed to watch run", "err", err)
 		h.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -373,7 +401,7 @@ func (h *webHandlers) watch(w http.ResponseWriter, r *http.Request) {
 			//
 			itemHTML := new(bytes.Buffer)
 			if err := h.RenderTemplate("run_item.tmpl", itemHTML, event.Payload); err != nil {
-				h.logger.Error(err, "rendering template for run item")
+				h.logger.Error("rendering template for run item", "err", err)
 				continue
 			}
 			if event.Type == pubsub.CreatedEvent {

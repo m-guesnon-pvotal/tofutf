@@ -91,13 +91,13 @@ RETURNING run_id
 ;`
 
 type UpdatePlannedChangesByIDParams struct {
-	ResourceAdditions    pgtype.Int4
-	ResourceChanges      pgtype.Int4
-	ResourceDestructions pgtype.Int4
-	OutputAdditions      pgtype.Int4
-	OutputChanges        pgtype.Int4
-	OutputDestructions   pgtype.Int4
-	RunID                pgtype.Text
+	ResourceAdditions    pgtype.Int4 `json:"resource_additions"`
+	ResourceChanges      pgtype.Int4 `json:"resource_changes"`
+	ResourceDestructions pgtype.Int4 `json:"resource_destructions"`
+	OutputAdditions      pgtype.Int4 `json:"output_additions"`
+	OutputChanges        pgtype.Int4 `json:"output_changes"`
+	OutputDestructions   pgtype.Int4 `json:"output_destructions"`
+	RunID                pgtype.Text `json:"run_id"`
 }
 
 // UpdatePlannedChangesByID implements Querier.UpdatePlannedChangesByID.

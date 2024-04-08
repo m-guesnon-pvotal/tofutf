@@ -32,14 +32,14 @@ const insertVariableSQL = `INSERT INTO variables (
 );`
 
 type InsertVariableParams struct {
-	VariableID  pgtype.Text
-	Key         pgtype.Text
-	Value       pgtype.Text
-	Description pgtype.Text
-	Category    pgtype.Text
-	Sensitive   pgtype.Bool
-	HCL         pgtype.Bool
-	VersionID   pgtype.Text
+	VariableID  pgtype.Text `json:"variable_id"`
+	Key         pgtype.Text `json:"key"`
+	Value       pgtype.Text `json:"value"`
+	Description pgtype.Text `json:"description"`
+	Category    pgtype.Text `json:"category"`
+	Sensitive   pgtype.Bool `json:"sensitive"`
+	HCL         pgtype.Bool `json:"hcl"`
+	VersionID   pgtype.Text `json:"version_id"`
 }
 
 // InsertVariable implements Querier.InsertVariable.
@@ -122,14 +122,14 @@ RETURNING variable_id
 ;`
 
 type UpdateVariableByIDParams struct {
-	Key         pgtype.Text
-	Value       pgtype.Text
-	Description pgtype.Text
-	Category    pgtype.Text
-	Sensitive   pgtype.Bool
-	VersionID   pgtype.Text
-	HCL         pgtype.Bool
-	VariableID  pgtype.Text
+	Key         pgtype.Text `json:"key"`
+	Value       pgtype.Text `json:"value"`
+	Description pgtype.Text `json:"description"`
+	Category    pgtype.Text `json:"category"`
+	Sensitive   pgtype.Bool `json:"sensitive"`
+	VersionID   pgtype.Text `json:"version_id"`
+	HCL         pgtype.Bool `json:"hcl"`
+	VariableID  pgtype.Text `json:"variable_id"`
 }
 
 // UpdateVariableByID implements Querier.UpdateVariableByID.

@@ -35,12 +35,12 @@ func (db *pgdb) listTags(ctx context.Context, organization string, opts ListTags
 	q := db.Conn(ctx)
 	batch := &pgx.Batch{}
 
-	q.FindTagsBatch(batch, pggen.FindTagsParams{
+	q.FindTags(ctx, pggen.FindTagsParams{
 		OrganizationName: sql.String(organization),
 		Limit:            opts.GetLimit(),
 		Offset:           opts.GetOffset(),
 	})
-	q.CountTagsBatch(batch, sql.String(organization))
+	q.CountTags(ctx, sql.String(organization))
 	results := db.SendBatch(ctx, batch)
 	defer results.Close()
 
