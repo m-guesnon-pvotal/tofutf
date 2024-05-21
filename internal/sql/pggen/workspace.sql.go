@@ -185,9 +185,9 @@ type FindWorkspacesRow struct {
 	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
 	Tags                       []string           `json:"tags"`
 	LatestRunStatus            pgtype.Text        `json:"latest_run_status"`
-	UserLock                   Users              `json:"user_lock"`
-	RunLock                    Runs               `json:"run_lock"`
-	WorkspaceConnection        RepoConnections    `json:"workspace_connection"`
+	UserLock                   *Users              `json:"user_lock"`
+	RunLock                    *Runs               `json:"run_lock"`
+	WorkspaceConnection        *RepoConnections    `json:"workspace_connection"`
 }
 
 // FindWorkspaces implements Querier.FindWorkspaces.
@@ -333,9 +333,9 @@ type FindWorkspacesByConnectionRow struct {
 	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
 	Tags                       []string           `json:"tags"`
 	LatestRunStatus            pgtype.Text        `json:"latest_run_status"`
-	UserLock                   Users              `json:"user_lock"`
-	RunLock                    Runs               `json:"run_lock"`
-	WorkspaceConnection        RepoConnections    `json:"workspace_connection"`
+	UserLock                   *Users              `json:"user_lock"`
+	RunLock                    *Runs               `json:"run_lock"`
+	WorkspaceConnection        *RepoConnections    `json:"workspace_connection"`
 }
 
 // FindWorkspacesByConnection implements Querier.FindWorkspacesByConnection.
@@ -458,9 +458,9 @@ type FindWorkspacesByUsernameRow struct {
 	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
 	Tags                       []string           `json:"tags"`
 	LatestRunStatus            pgtype.Text        `json:"latest_run_status"`
-	UserLock                   Users              `json:"user_lock"`
-	RunLock                    Runs               `json:"run_lock"`
-	WorkspaceConnection        RepoConnections    `json:"workspace_connection"`
+	UserLock                   *Users              `json:"user_lock"`
+	RunLock                    *Runs               `json:"run_lock"`
+	WorkspaceConnection        *RepoConnections    `json:"workspace_connection"`
 }
 
 // FindWorkspacesByUsername implements Querier.FindWorkspacesByUsername.
@@ -595,9 +595,9 @@ type FindWorkspaceByNameRow struct {
 	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
 	Tags                       []string           `json:"tags"`
 	LatestRunStatus            pgtype.Text        `json:"latest_run_status"`
-	UserLock                   Users              `json:"user_lock"`
-	RunLock                    Runs               `json:"run_lock"`
-	WorkspaceConnection        RepoConnections    `json:"workspace_connection"`
+	UserLock                   *Users              `json:"user_lock"`
+	RunLock                    *Runs               `json:"run_lock"`
+	WorkspaceConnection        *RepoConnections    `json:"workspace_connection"`
 }
 
 // FindWorkspaceByName implements Querier.FindWorkspaceByName.
@@ -704,9 +704,9 @@ type FindWorkspaceByIDRow struct {
 	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
 	Tags                       []string           `json:"tags"`
 	LatestRunStatus            pgtype.Text        `json:"latest_run_status"`
-	UserLock                   Users              `json:"user_lock"`
-	RunLock                    Runs               `json:"run_lock"`
-	WorkspaceConnection        RepoConnections    `json:"workspace_connection"`
+	UserLock                   *Users              `json:"user_lock"`
+	RunLock                    *Runs               `json:"run_lock"`
+	WorkspaceConnection        *RepoConnections    `json:"workspace_connection"`
 }
 
 // FindWorkspaceByID implements Querier.FindWorkspaceByID.
@@ -813,9 +813,9 @@ type FindWorkspaceByIDForUpdateRow struct {
 	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
 	Tags                       []string           `json:"tags"`
 	LatestRunStatus            pgtype.Text        `json:"latest_run_status"`
-	UserLock                   Users              `json:"user_lock"`
-	RunLock                    Runs               `json:"run_lock"`
-	WorkspaceConnection        RepoConnections    `json:"workspace_connection"`
+	UserLock                   *Users              `json:"user_lock"`
+	RunLock                    *Runs               `json:"run_lock"`
+	WorkspaceConnection        *RepoConnections    `json:"workspace_connection"`
 }
 
 // FindWorkspaceByIDForUpdate implements Querier.FindWorkspaceByIDForUpdate.

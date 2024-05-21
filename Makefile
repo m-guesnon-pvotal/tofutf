@@ -4,9 +4,9 @@ GIT_COMMIT = $(shell git rev-parse HEAD)
 RANDOM_SUFFIX := $(shell cat /dev/urandom | tr -dc 'a-z0-9' | head -c5)
 
 # Provide some sane defaults for connecting to postgres.
-PGPASSWORD ?= $(shell kubectl get secrets postgres-postgresql -oyaml | yq '.data["password"]' -r | base64 -d)
+PGPASSWORD ?= r0jlfWbPnOAFrg9z
 PGUSER ?= tofutf
-DBSTRING ?= postgres://$(PGUSER):$(PGPASSWORD)@localhost:5432/postgres
+DBSTRING ?= postgres://$(PGUSER):$(PGPASSWORD)@localhost:15432/tofutf
 
 # Get the currently used golang install path (in GOPATH/bin, unless GOBIN is set)
 ifeq (,$(shell go env GOBIN))
@@ -78,10 +78,10 @@ sql: install-pggen
 		--query-glob 'internal/sql/queries/*.sql' \
 		--output-dir ./internal/sql/pggen \
 		--go-type 'inet=net.IPNet' \
-		--go-type 'text=github.com/jackc/pgx/v5/pgtype.Text' \
-		--go-type 'int4=github.com/jackc/pgx/v5/pgtype.Int4' \
-		--go-type 'int8=github.com/jackc/pgx/v5/pgtype.Int8' \
-		--go-type 'bool=github.com/jackc/pgx/v5/pgtype.Bool' \
+		--go-type 'text=github.com/jackc/pgx/v4/pgtype.Text' \
+		--go-type 'int4=github.com/jackc/pgx/v4/pgtype.Int4' \
+		--go-type 'int8=github.com/jackc/pgx/v4/pgtype.Int8' \
+		--go-type 'bool=github.com/jackc/pgx/v4/pgtype.Bool' \
 		--go-type 'bytea=[]byte' \
 		--acronym url \
 		--acronym cli \
@@ -156,4 +156,4 @@ publish:
 	#helm push ./hack/charts/tofutf-$(VERSION).tgz oci://ghcr.io/tofutf/tofutf/charts
 
 publish-dev:
-	VERSION=$(VERSION) KO_DOCKER_REPO=ghcr.io/tofutf/tofutf/ ko build --base-import-paths -t dev ./cmd/tofutfd
+	VERSION=$(VERSION) ko build --local --base-import-paths -t dev ./cmd/tofutfd
