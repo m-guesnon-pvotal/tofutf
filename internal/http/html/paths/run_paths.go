@@ -5,57 +5,58 @@ package paths
 import "fmt"
 
 func Runs(workspace string) string {
-	return fmt.Sprintf("/app/workspaces/%s/runs", workspace)
+    return fmt.Sprintf("/app/workspaces/%s/runs", workspace)
 }
 
 func CreateRun(workspace string) string {
-	return fmt.Sprintf("/app/workspaces/%s/runs/create", workspace)
+    return fmt.Sprintf("/app/workspaces/%s/runs/create", workspace)
 }
 
 func NewRun(workspace string) string {
-	return fmt.Sprintf("/app/workspaces/%s/runs/new", workspace)
+    return fmt.Sprintf("/app/workspaces/%s/runs/new", workspace)
 }
 
 func Run(run string) string {
-	return fmt.Sprintf("/app/runs/%s", run)
+    return fmt.Sprintf("/app/runs/%s", run)
 }
 
 func EditRun(run string) string {
-	return fmt.Sprintf("/app/runs/%s/edit", run)
+    return fmt.Sprintf("/app/runs/%s/edit", run)
 }
 
 func UpdateRun(run string) string {
-	return fmt.Sprintf("/app/runs/%s/update", run)
+    return fmt.Sprintf("/app/runs/%s/update", run)
 }
 
 func DeleteRun(run string) string {
-	return fmt.Sprintf("/app/runs/%s/delete", run)
+    return fmt.Sprintf("/app/runs/%s/delete", run)
 }
 
 func ApplyRun(run string) string {
-	return fmt.Sprintf("/app/runs/%s/apply", run)
+    return fmt.Sprintf("/app/runs/%s/apply", run)
 }
 
 func DiscardRun(run string) string {
-	return fmt.Sprintf("/app/runs/%s/discard", run)
+    return fmt.Sprintf("/app/runs/%s/discard", run)
 }
 
 func CancelRun(run string) string {
-	return fmt.Sprintf("/app/runs/%s/cancel", run)
+    return fmt.Sprintf("/app/runs/%s/cancel", run)
 }
 
 func ForceCancelRun(run string) string {
-	return fmt.Sprintf("/app/runs/%s/force-cancel", run)
+    return fmt.Sprintf("/app/runs/%s/force-cancel", run)
 }
 
 func RetryRun(run string) string {
-	return fmt.Sprintf("/app/runs/%s/retry", run)
+    return fmt.Sprintf("/app/runs/%s/retry", run)
 }
 
 func TailRun(run string) string {
-	return fmt.Sprintf("/app/runs/%s/tail", run)
+    return fmt.Sprintf("/app/runs/%s/tail", run)
 }
 
 func WidgetRun(run string) string {
-	return fmt.Sprintf("/app/runs/%s/widget", run)
+    return fmt.Sprintf("/app/runs/%s/widget", run)
 }
+

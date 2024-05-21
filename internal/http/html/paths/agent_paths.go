@@ -5,33 +5,34 @@ package paths
 import "fmt"
 
 func Agents(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/agents", organization)
+    return fmt.Sprintf("/app/organizations/%s/agents", organization)
 }
 
 func CreateAgent(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/agents/create", organization)
+    return fmt.Sprintf("/app/organizations/%s/agents/create", organization)
 }
 
 func NewAgent(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/agents/new", organization)
+    return fmt.Sprintf("/app/organizations/%s/agents/new", organization)
 }
 
 func Agent(agent string) string {
-	return fmt.Sprintf("/app/agents/%s", agent)
+    return fmt.Sprintf("/app/agents/%s", agent)
 }
 
 func EditAgent(agent string) string {
-	return fmt.Sprintf("/app/agents/%s/edit", agent)
+    return fmt.Sprintf("/app/agents/%s/edit", agent)
 }
 
 func UpdateAgent(agent string) string {
-	return fmt.Sprintf("/app/agents/%s/update", agent)
+    return fmt.Sprintf("/app/agents/%s/update", agent)
 }
 
 func DeleteAgent(agent string) string {
-	return fmt.Sprintf("/app/agents/%s/delete", agent)
+    return fmt.Sprintf("/app/agents/%s/delete", agent)
 }
 
 func WatchAgent(organization string) string {
-	return fmt.Sprintf("/app/organizations/%s/agents/watch", organization)
+    return fmt.Sprintf("/app/organizations/%s/agents/watch", organization)
 }
+
