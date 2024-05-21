@@ -2,9 +2,6 @@
 
 package paths
 
-import "fmt"
-
 func Tokens() string {
-    return "/app/profile/tokens"
+	return "/app/profile/tokens"
 }
-

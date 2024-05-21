@@ -5,14 +5,13 @@ package paths
 import "fmt"
 
 func OrganizationToken(organization string) string {
-    return fmt.Sprintf("/app/organizations/%s/tokens/show", organization)
+	return fmt.Sprintf("/app/organizations/%s/tokens/show", organization)
 }
 
 func CreateOrganizationToken(organization string) string {
-    return fmt.Sprintf("/app/organizations/%s/tokens/create", organization)
+	return fmt.Sprintf("/app/organizations/%s/tokens/create", organization)
 }
 
 func DeleteOrganizationToken(organization string) string {
-    return fmt.Sprintf("/app/organizations/%s/tokens/delete", organization)
+	return fmt.Sprintf("/app/organizations/%s/tokens/delete", organization)
 }
-

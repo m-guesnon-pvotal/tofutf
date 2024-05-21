@@ -5,34 +5,33 @@ package paths
 import "fmt"
 
 func VCSProviders(organization string) string {
-    return fmt.Sprintf("/app/organizations/%s/vcs-providers", organization)
+	return fmt.Sprintf("/app/organizations/%s/vcs-providers", organization)
 }
 
 func CreateVCSProvider(organization string) string {
-    return fmt.Sprintf("/app/organizations/%s/vcs-providers/create", organization)
+	return fmt.Sprintf("/app/organizations/%s/vcs-providers/create", organization)
 }
 
 func NewVCSProvider(organization string) string {
-    return fmt.Sprintf("/app/organizations/%s/vcs-providers/new", organization)
+	return fmt.Sprintf("/app/organizations/%s/vcs-providers/new", organization)
 }
 
 func VCSProvider(vcsProvider string) string {
-    return fmt.Sprintf("/app/vcs-providers/%s", vcsProvider)
+	return fmt.Sprintf("/app/vcs-providers/%s", vcsProvider)
 }
 
 func EditVCSProvider(vcsProvider string) string {
-    return fmt.Sprintf("/app/vcs-providers/%s/edit", vcsProvider)
+	return fmt.Sprintf("/app/vcs-providers/%s/edit", vcsProvider)
 }
 
 func UpdateVCSProvider(vcsProvider string) string {
-    return fmt.Sprintf("/app/vcs-providers/%s/update", vcsProvider)
+	return fmt.Sprintf("/app/vcs-providers/%s/update", vcsProvider)
 }
 
 func DeleteVCSProvider(vcsProvider string) string {
-    return fmt.Sprintf("/app/vcs-providers/%s/delete", vcsProvider)
+	return fmt.Sprintf("/app/vcs-providers/%s/delete", vcsProvider)
 }
 
 func NewGithubAppVCSProvider(organization string) string {
-    return fmt.Sprintf("/app/organizations/%s/vcs-providers/new-github-app", organization)
+	return fmt.Sprintf("/app/organizations/%s/vcs-providers/new-github-app", organization)
 }
-

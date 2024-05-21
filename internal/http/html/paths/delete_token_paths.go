@@ -2,9 +2,6 @@
 
 package paths
 
-import "fmt"
-
 func DeleteToken() string {
-    return "/app/profile/tokens/delete"
+	return "/app/profile/tokens/delete"
 }
-
