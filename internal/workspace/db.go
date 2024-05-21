@@ -110,7 +110,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 			id:       r.UserLock.Username.String,
 			LockKind: UserLock,
 		}
-	} else if r.RunLock.RunID.Valid {
+	} else if r.RunLock != nil && r.RunLock.RunID.Valid {
 		ws.Lock = &Lock{
 			id:       r.RunLock.RunID.String,
 			LockKind: RunLock,
