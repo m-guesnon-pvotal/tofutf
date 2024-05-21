@@ -68,8 +68,8 @@ type FindVCSProvidersByOrganizationRow struct {
 	VCSKind          pgtype.Text        `json:"vcs_kind"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
 	GithubAppID      pgtype.Int8        `json:"github_app_id"`
-	GithubApp        GithubApps         `json:"github_app"`
-	GithubAppInstall GithubAppInstalls  `json:"github_app_install"`
+	GithubApp        *GithubApps         `json:"github_app"`
+	GithubAppInstall *GithubAppInstalls  `json:"github_app_install"`
 }
 
 // FindVCSProvidersByOrganization implements Querier.FindVCSProvidersByOrganization.
@@ -114,8 +114,8 @@ type FindVCSProvidersRow struct {
 	VCSKind          pgtype.Text        `json:"vcs_kind"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
 	GithubAppID      pgtype.Int8        `json:"github_app_id"`
-	GithubApp        GithubApps         `json:"github_app"`
-	GithubAppInstall GithubAppInstalls  `json:"github_app_install"`
+	GithubApp        *GithubApps         `json:"github_app"`
+	GithubAppInstall *GithubAppInstalls  `json:"github_app_install"`
 }
 
 // FindVCSProviders implements Querier.FindVCSProviders.
@@ -161,8 +161,8 @@ type FindVCSProvidersByGithubAppInstallIDRow struct {
 	VCSKind          pgtype.Text        `json:"vcs_kind"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
 	GithubAppID      pgtype.Int8        `json:"github_app_id"`
-	GithubApp        GithubApps         `json:"github_app"`
-	GithubAppInstall GithubAppInstalls  `json:"github_app_install"`
+	GithubApp        *GithubApps         `json:"github_app"`
+	GithubAppInstall *GithubAppInstalls  `json:"github_app_install"`
 }
 
 // FindVCSProvidersByGithubAppInstallID implements Querier.FindVCSProvidersByGithubAppInstallID.
@@ -208,8 +208,8 @@ type FindVCSProviderRow struct {
 	VCSKind          pgtype.Text        `json:"vcs_kind"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
 	GithubAppID      pgtype.Int8        `json:"github_app_id"`
-	GithubApp        GithubApps         `json:"github_app"`
-	GithubAppInstall GithubAppInstalls  `json:"github_app_install"`
+	GithubApp        *GithubApps         `json:"github_app"`
+	GithubAppInstall *GithubAppInstalls  `json:"github_app_install"`
 }
 
 // FindVCSProvider implements Querier.FindVCSProvider.
@@ -256,8 +256,8 @@ type FindVCSProviderForUpdateRow struct {
 	VCSKind          pgtype.Text        `json:"vcs_kind"`
 	OrganizationName pgtype.Text        `json:"organization_name"`
 	GithubAppID      pgtype.Int8        `json:"github_app_id"`
-	GithubApp        GithubApps         `json:"github_app"`
-	GithubAppInstall GithubAppInstalls  `json:"github_app_install"`
+	GithubApp        *GithubApps         `json:"github_app"`
+	GithubAppInstall *GithubAppInstalls  `json:"github_app_install"`
 }
 
 // FindVCSProviderForUpdate implements Querier.FindVCSProviderForUpdate.
