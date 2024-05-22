@@ -237,9 +237,9 @@ type FindRunsRow struct {
 	ReplaceAddrs           []string                `json:"replace_addrs"`
 	TargetAddrs            []string                `json:"target_addrs"`
 	AutoApply              pgtype.Bool             `json:"auto_apply"`
-	PlanResourceReport     Report                  `json:"plan_resource_report"`
-	PlanOutputReport       Report                  `json:"plan_output_report"`
-	ApplyResourceReport    Report                  `json:"apply_resource_report"`
+	PlanResourceReport     *Report                  `json:"plan_resource_report"`
+	PlanOutputReport       *Report                  `json:"plan_output_report"`
+	ApplyResourceReport    *Report                  `json:"apply_resource_report"`
 	ConfigurationVersionID pgtype.Text             `json:"configuration_version_id"`
 	WorkspaceID            pgtype.Text             `json:"workspace_id"`
 	PlanOnly               pgtype.Bool             `json:"plan_only"`
@@ -430,9 +430,9 @@ type FindRunByIDRow struct {
 	ReplaceAddrs           []string                `json:"replace_addrs"`
 	TargetAddrs            []string                `json:"target_addrs"`
 	AutoApply              pgtype.Bool             `json:"auto_apply"`
-	PlanResourceReport     Report                  `json:"plan_resource_report"`
-	PlanOutputReport       Report                  `json:"plan_output_report"`
-	ApplyResourceReport    Report                  `json:"apply_resource_report"`
+	PlanResourceReport     *Report                  `json:"plan_resource_report"`
+	PlanOutputReport       *Report                  `json:"plan_output_report"`
+	ApplyResourceReport    *Report                  `json:"apply_resource_report"`
 	ConfigurationVersionID pgtype.Text             `json:"configuration_version_id"`
 	WorkspaceID            pgtype.Text             `json:"workspace_id"`
 	PlanOnly               pgtype.Bool             `json:"plan_only"`
@@ -581,9 +581,9 @@ type FindRunByIDForUpdateRow struct {
 	ReplaceAddrs           []string                `json:"replace_addrs"`
 	TargetAddrs            []string                `json:"target_addrs"`
 	AutoApply              pgtype.Bool             `json:"auto_apply"`
-	PlanResourceReport     Report                  `json:"plan_resource_report"`
-	PlanOutputReport       Report                  `json:"plan_output_report"`
-	ApplyResourceReport    Report                  `json:"apply_resource_report"`
+	PlanResourceReport     *Report                  `json:"plan_resource_report"`
+	PlanOutputReport       *Report                  `json:"plan_output_report"`
+	ApplyResourceReport    *Report                  `json:"apply_resource_report"`
 	ConfigurationVersionID pgtype.Text             `json:"configuration_version_id"`
 	WorkspaceID            pgtype.Text             `json:"workspace_id"`
 	PlanOnly               pgtype.Bool             `json:"plan_only"`
