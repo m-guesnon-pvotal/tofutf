@@ -206,16 +206,21 @@ func (s *Service) GetByName(ctx context.Context, organization, workspace string)
 }
 
 func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*Workspace], error) {
+	s.logger.Debug("listing workspaces")
 	if opts.Organization == nil {
+		s.logger.Debug("listing workspaces: no org")
 		// subject needs perms on site to list workspaces across site
 		_, err := s.site.CanAccess(ctx, rbac.ListWorkspacesAction, "")
 		if err != nil {
 			return nil, err
 		}
 	} else {
+		s.logger.Debug("listing workspaces: with org")
 		// check if subject has perms to list workspaces in organization
 		_, err := s.organization.CanAccess(ctx, rbac.ListWorkspacesAction, *opts.Organization)
 		if err == internal.ErrAccessNotPermitted {
+
+			s.logger.Debug("not permitted")
 			// user does not have org-wide perms; fallback to listing workspaces
 			// for which they have workspace-level perms.
 			subject, err := internal.SubjectFromContext(ctx)
@@ -226,10 +231,13 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*W
 				return s.db.listByUsername(ctx, user.Username, *opts.Organization, opts.PageOptions)
 			}
 		} else if err != nil {
+
+			s.logger.Debug("other err")
 			return nil, err
 		}
 	}
 
+	s.logger.Debug("list OK")
 	return s.db.list(ctx, opts)
 }
 

@@ -220,3 +220,118 @@ func (_d ServiceWithTracing) WatchJobs(ctx context.Context) (ch1 <-chan pubsub.E
 	}()
 	return _d.Service.WatchJobs(ctx)
 }
+
+// finishJob implements Service
+func (_d ServiceWithTracing) finishJob(ctx context.Context, spec JobSpec, opts finishJobOptions) (err error) {
+	ctx, _span := otel.Tracer(_d._instance).Start(ctx, "Service.finishJob")
+	defer func() {
+		if _d._spanDecorator != nil {
+			_d._spanDecorator(_span, map[string]interface{}{
+				"ctx":  ctx,
+				"spec": spec,
+				"opts": opts}, map[string]interface{}{
+				"err": err})
+		} else if err != nil {
+			_span.RecordError(err)
+			_span.SetAttributes(
+				attribute.String("event", "error"),
+				attribute.String("message", err.Error()),
+			)
+		}
+
+		_span.End()
+	}()
+	return _d.Service.finishJob(ctx, spec, opts)
+}
+
+// getAgentJobs implements Service
+func (_d ServiceWithTracing) getAgentJobs(ctx context.Context, agentID string) (jpa1 []*Job, err error) {
+	ctx, _span := otel.Tracer(_d._instance).Start(ctx, "Service.getAgentJobs")
+	defer func() {
+		if _d._spanDecorator != nil {
+			_d._spanDecorator(_span, map[string]interface{}{
+				"ctx":     ctx,
+				"agentID": agentID}, map[string]interface{}{
+				"jpa1": jpa1,
+				"err":  err})
+		} else if err != nil {
+			_span.RecordError(err)
+			_span.SetAttributes(
+				attribute.String("event", "error"),
+				attribute.String("message", err.Error()),
+			)
+		}
+
+		_span.End()
+	}()
+	return _d.Service.getAgentJobs(ctx, agentID)
+}
+
+// registerAgent implements Service
+func (_d ServiceWithTracing) registerAgent(ctx context.Context, opts registerAgentOptions) (ap1 *Agent, err error) {
+	ctx, _span := otel.Tracer(_d._instance).Start(ctx, "Service.registerAgent")
+	defer func() {
+		if _d._spanDecorator != nil {
+			_d._spanDecorator(_span, map[string]interface{}{
+				"ctx":  ctx,
+				"opts": opts}, map[string]interface{}{
+				"ap1": ap1,
+				"err": err})
+		} else if err != nil {
+			_span.RecordError(err)
+			_span.SetAttributes(
+				attribute.String("event", "error"),
+				attribute.String("message", err.Error()),
+			)
+		}
+
+		_span.End()
+	}()
+	return _d.Service.registerAgent(ctx, opts)
+}
+
+// startJob implements Service
+func (_d ServiceWithTracing) startJob(ctx context.Context, spec JobSpec) (ba1 []byte, err error) {
+	ctx, _span := otel.Tracer(_d._instance).Start(ctx, "Service.startJob")
+	defer func() {
+		if _d._spanDecorator != nil {
+			_d._spanDecorator(_span, map[string]interface{}{
+				"ctx":  ctx,
+				"spec": spec}, map[string]interface{}{
+				"ba1": ba1,
+				"err": err})
+		} else if err != nil {
+			_span.RecordError(err)
+			_span.SetAttributes(
+				attribute.String("event", "error"),
+				attribute.String("message", err.Error()),
+			)
+		}
+
+		_span.End()
+	}()
+	return _d.Service.startJob(ctx, spec)
+}
+
+// updateAgentStatus implements Service
+func (_d ServiceWithTracing) updateAgentStatus(ctx context.Context, agentID string, status AgentStatus) (err error) {
+	ctx, _span := otel.Tracer(_d._instance).Start(ctx, "Service.updateAgentStatus")
+	defer func() {
+		if _d._spanDecorator != nil {
+			_d._spanDecorator(_span, map[string]interface{}{
+				"ctx":     ctx,
+				"agentID": agentID,
+				"status":  status}, map[string]interface{}{
+				"err": err})
+		} else if err != nil {
+			_span.RecordError(err)
+			_span.SetAttributes(
+				attribute.String("event", "error"),
+				attribute.String("message", err.Error()),
+			)
+		}
+
+		_span.End()
+	}()
+	return _d.Service.updateAgentStatus(ctx, agentID, status)
+}

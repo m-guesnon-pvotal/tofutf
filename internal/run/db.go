@@ -37,9 +37,9 @@ type (
 		ReplaceAddrs           []string                      `json:"replace_addrs"`
 		TargetAddrs            []string                      `json:"target_addrs"`
 		AutoApply              pgtype.Bool                   `json:"auto_apply"`
-		PlanResourceReport     pggen.Report                  `json:"plan_resource_report"`
-		PlanOutputReport       pggen.Report                  `json:"plan_output_report"`
-		ApplyResourceReport    pggen.Report                  `json:"apply_resource_report"`
+		PlanResourceReport     *pggen.Report                 `json:"plan_resource_report"`
+		PlanOutputReport       *pggen.Report                 `json:"plan_output_report"`
+		ApplyResourceReport    *pggen.Report                 `json:"apply_resource_report"`
 		ConfigurationVersionID pgtype.Text                   `json:"configuration_version_id"`
 		WorkspaceID            pgtype.Text                   `json:"workspace_id"`
 		PlanOnly               pgtype.Bool                   `json:"plan_only"`

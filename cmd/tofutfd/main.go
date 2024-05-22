@@ -59,17 +59,19 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 				return err
 			}
 
-			shutdown, err := otel.SetupOTelSDK(ctx)
-			if err != nil {
-				return err
-			}
-
-			defer func() {
-				err := shutdown(ctx)
+			if !cfg.DisableOpenTelemetry {
+				shutdown, err := otel.SetupOTelSDK(ctx)
 				if err != nil {
-					logger.Error("failed to shutdown cleanly", "err", err)
+					return err
 				}
-			}()
+
+				defer func() {
+					err := shutdown(ctx)
+					if err != nil {
+						logger.Error("failed to shutdown cleanly", "err", err)
+					}
+				}()
+			}
 
 			// Confer superuser privileges on all calls to service endpoints
 			ctx := internal.AddSubjectToContext(cmd.Context(), &internal.Superuser{Username: "app-user"})
@@ -120,6 +122,8 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.OIDC.ClientSecret, "oidc-client-secret", "", "OIDC client secret")
 	cmd.Flags().StringSliceVar(&cfg.OIDC.Scopes, "oidc-scopes", authenticator.DefaultOIDCScopes, "OIDC scopes")
 	cmd.Flags().StringVar(&cfg.OIDC.UsernameClaim, "oidc-username-claim", string(authenticator.DefaultUsernameClaim), "OIDC claim to be used for username (name, email, or sub)")
+
+	cmd.Flags().BoolVar(&cfg.DisableOpenTelemetry, "disable-open-telemetry", true, "Force disabling open-telemetry collectors")
 
 	cmd.Flags().BoolVar(&cfg.RestrictOrganizationCreation, "restrict-org-creation", false, "Restrict organization creation capability to site admin role")
 

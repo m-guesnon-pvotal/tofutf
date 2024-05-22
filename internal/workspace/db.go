@@ -18,41 +18,41 @@ type (
 
 	// pgresult represents the result of a database query for a workspace.
 	pgresult struct {
-		WorkspaceID                pgtype.Text           `json:"workspace_id"`
-		CreatedAt                  pgtype.Timestamptz    `json:"created_at"`
-		UpdatedAt                  pgtype.Timestamptz    `json:"updated_at"`
-		AllowDestroyPlan           pgtype.Bool           `json:"allow_destroy_plan"`
-		AutoApply                  pgtype.Bool           `json:"auto_apply"`
-		CanQueueDestroyPlan        pgtype.Bool           `json:"can_queue_destroy_plan"`
-		Description                pgtype.Text           `json:"description"`
-		Environment                pgtype.Text           `json:"environment"`
-		ExecutionMode              pgtype.Text           `json:"execution_mode"`
-		GlobalRemoteState          pgtype.Bool           `json:"global_remote_state"`
-		MigrationEnvironment       pgtype.Text           `json:"migration_environment"`
-		Name                       pgtype.Text           `json:"name"`
-		QueueAllRuns               pgtype.Bool           `json:"queue_all_runs"`
-		SpeculativeEnabled         pgtype.Bool           `json:"speculative_enabled"`
-		SourceName                 pgtype.Text           `json:"source_name"`
-		SourceURL                  pgtype.Text           `json:"source_url"`
-		StructuredRunOutputEnabled pgtype.Bool           `json:"structured_run_output_enabled"`
-		TerraformVersion           pgtype.Text           `json:"terraform_version"`
-		TriggerPrefixes            []string              `json:"trigger_prefixes"`
-		WorkingDirectory           pgtype.Text           `json:"working_directory"`
-		LockRunID                  pgtype.Text           `json:"lock_run_id"`
-		LatestRunID                pgtype.Text           `json:"latest_run_id"`
-		OrganizationName           pgtype.Text           `json:"organization_name"`
-		Branch                     pgtype.Text           `json:"branch"`
-		LockUsername               pgtype.Text           `json:"lock_username"`
-		CurrentStateVersionID      pgtype.Text           `json:"current_state_version_id"`
-		TriggerPatterns            []string              `json:"trigger_patterns"`
-		VCSTagsRegex               pgtype.Text           `json:"vcs_tags_regex"`
-		AllowCLIApply              pgtype.Bool           `json:"allow_cli_apply"`
-		AgentPoolID                pgtype.Text           `json:"agent_pool_id"`
-		Tags                       []string              `json:"tags"`
-		LatestRunStatus            pgtype.Text           `json:"latest_run_status"`
-		UserLock                   pggen.Users           `json:"user_lock"`
-		RunLock                    pggen.Runs            `json:"run_lock"`
-		WorkspaceConnection        pggen.RepoConnections `json:"workspace_connection"`
+		WorkspaceID                pgtype.Text            `json:"workspace_id"`
+		CreatedAt                  pgtype.Timestamptz     `json:"created_at"`
+		UpdatedAt                  pgtype.Timestamptz     `json:"updated_at"`
+		AllowDestroyPlan           pgtype.Bool            `json:"allow_destroy_plan"`
+		AutoApply                  pgtype.Bool            `json:"auto_apply"`
+		CanQueueDestroyPlan        pgtype.Bool            `json:"can_queue_destroy_plan"`
+		Description                pgtype.Text            `json:"description"`
+		Environment                pgtype.Text            `json:"environment"`
+		ExecutionMode              pgtype.Text            `json:"execution_mode"`
+		GlobalRemoteState          pgtype.Bool            `json:"global_remote_state"`
+		MigrationEnvironment       pgtype.Text            `json:"migration_environment"`
+		Name                       pgtype.Text            `json:"name"`
+		QueueAllRuns               pgtype.Bool            `json:"queue_all_runs"`
+		SpeculativeEnabled         pgtype.Bool            `json:"speculative_enabled"`
+		SourceName                 pgtype.Text            `json:"source_name"`
+		SourceURL                  pgtype.Text            `json:"source_url"`
+		StructuredRunOutputEnabled pgtype.Bool            `json:"structured_run_output_enabled"`
+		TerraformVersion           pgtype.Text            `json:"terraform_version"`
+		TriggerPrefixes            []string               `json:"trigger_prefixes"`
+		WorkingDirectory           pgtype.Text            `json:"working_directory"`
+		LockRunID                  pgtype.Text            `json:"lock_run_id"`
+		LatestRunID                pgtype.Text            `json:"latest_run_id"`
+		OrganizationName           pgtype.Text            `json:"organization_name"`
+		Branch                     pgtype.Text            `json:"branch"`
+		LockUsername               pgtype.Text            `json:"lock_username"`
+		CurrentStateVersionID      pgtype.Text            `json:"current_state_version_id"`
+		TriggerPatterns            []string               `json:"trigger_patterns"`
+		VCSTagsRegex               pgtype.Text            `json:"vcs_tags_regex"`
+		AllowCLIApply              pgtype.Bool            `json:"allow_cli_apply"`
+		AgentPoolID                pgtype.Text            `json:"agent_pool_id"`
+		Tags                       []string               `json:"tags"`
+		LatestRunStatus            pgtype.Text            `json:"latest_run_status"`
+		UserLock                   *pggen.Users           `json:"user_lock"`
+		RunLock                    *pggen.Runs            `json:"run_lock"`
+		WorkspaceConnection        *pggen.RepoConnections `json:"workspace_connection"`
 	}
 )
 
@@ -86,7 +86,7 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		ws.AgentPoolID = &r.AgentPoolID.String
 	}
 
-	if r.WorkspaceConnection != (pggen.RepoConnections{}) {
+	if r.WorkspaceConnection != nil {
 		ws.Connection = &Connection{
 			AllowCLIApply: r.AllowCLIApply.Bool,
 			VCSProviderID: r.WorkspaceConnection.VCSProviderID.String,
@@ -105,12 +105,12 @@ func (r pgresult) toWorkspace() (*Workspace, error) {
 		}
 	}
 
-	if r.UserLock != (pggen.Users{}) {
+	if r.UserLock != nil {
 		ws.Lock = &Lock{
 			id:       r.UserLock.Username.String,
 			LockKind: UserLock,
 		}
-	} else if r.RunLock.RunID.Valid {
+	} else if r.RunLock != nil && r.RunLock.RunID.Valid {
 		ws.Lock = &Lock{
 			id:       r.RunLock.RunID.String,
 			LockKind: RunLock,
