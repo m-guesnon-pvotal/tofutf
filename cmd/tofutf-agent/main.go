@@ -50,17 +50,19 @@ func run(ctx context.Context, args []string) error {
 				return err
 			}
 
-			shutdown, err := otel.SetupOTelSDK(ctx)
-			if err != nil {
-				return err
-			}
-
-			defer func() {
-				err := shutdown(ctx)
+			if !agentConfig.DisableOpenTelemetry {
+				shutdown, err := otel.SetupOTelSDK(ctx)
 				if err != nil {
-					logger.Error("failed to shutdown cleanly", "err", err)
+					return err
 				}
-			}()
+
+				defer func() {
+					err := shutdown(ctx)
+					if err != nil {
+						logger.Error("failed to shutdown cleanly", "err", err)
+					}
+				}()
+			}
 
 			agent, err := agent.NewPoolDaemon(logger, *agentConfig, clientConfig)
 			if err != nil {
@@ -74,6 +76,7 @@ func run(ctx context.Context, args []string) error {
 
 	cmd.Flags().StringVar(&clientConfig.Address, "address", otfapi.DefaultAddress, "Address of OTF server")
 	cmd.Flags().StringVar(&clientConfig.Token, "token", "", "Agent token for authentication")
+
 	cmd.MarkFlagRequired("token") //nolint:errcheck
 	cmd.SetArgs(args)
 

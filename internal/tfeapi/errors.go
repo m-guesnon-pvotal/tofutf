@@ -17,8 +17,10 @@ var codes = map[error]int{
 }
 
 func lookupHTTPCode(err error) int {
-	if v, ok := codes[err]; ok {
-		return v
+	for errType, code := range codes {
+		if errors.Is(err, errType) {
+			return code
+		}
 	}
 	return http.StatusInternalServerError
 }

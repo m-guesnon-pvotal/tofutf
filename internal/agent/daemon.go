@@ -39,12 +39,13 @@ var (
 type (
 	// Config is configuration for an agent daemon
 	Config struct {
-		Name            string // descriptive name for agent
-		Concurrency     int    // number of jobs the agent can execute at any one time
-		Sandbox         bool   // isolate privileged ops within sandbox
-		Debug           bool   // toggle debug mode
-		PluginCache     bool   // toggle use of terraform's shared plugin cache
-		TerraformBinDir string // destination directory for terraform binaries
+		Name                 string // descriptive name for agent
+		Concurrency          int    // number of jobs the agent can execute at any one time
+		Sandbox              bool   // isolate privileged ops within sandbox
+		Debug                bool   // toggle debug mode
+		PluginCache          bool   // toggle use of terraform's shared plugin cache
+		TerraformBinDir      string // destination directory for terraform binaries
+		DisableOpenTelemetry bool
 	}
 )
 
@@ -55,6 +56,7 @@ func NewConfigFromFlags(flags *pflag.FlagSet) *Config {
 	flags.BoolVar(&cfg.Debug, "debug", false, "Enable agent debug mode which dumps additional info to terraform runs.")
 	flags.BoolVar(&cfg.PluginCache, "plugin-cache", false, "Enable shared plugin cache for terraform providers.")
 	flags.StringVar(&cfg.Name, "name", "", "Give agent a descriptive name. Optional.")
+
 	return &cfg
 }
 
