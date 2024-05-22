@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	tfetypes "github.com/hashicorp/go-tfe"
 	"github.com/tofutf/tofutf/internal"
 	otfhttp "github.com/tofutf/tofutf/internal/http"
 	"github.com/tofutf/tofutf/internal/http/decode"
@@ -35,6 +36,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs", a.listRuns).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/runs", a.listRuns).Methods("GET")
 	r.HandleFunc("/runs/{id}", a.getRun).Methods("GET")
+	r.HandleFunc("/runs/{id}/task-stages", a.getTaskStages).Methods("GET")
 	r.HandleFunc("/runs/{id}/actions/discard", a.discardRun).Methods("POST")
 	r.HandleFunc("/runs/{id}/actions/cancel", a.cancelRun).Methods("POST")
 	r.HandleFunc("/runs/{id}/actions/force-cancel", a.forceCancelRun).Methods("POST")
@@ -155,6 +157,9 @@ func (a *tfe) getRunQueue(w http.ResponseWriter, r *http.Request) {
 	a.listRunsWithOptions(w, r, ListOptions{
 		Statuses: []Status{RunPlanQueued, RunApplyQueued},
 	})
+}
+func (a *tfe) getTaskStages(w http.ResponseWriter, r *http.Request) {
+	a.RespondWithPage(w, r, []*tfetypes.TaskStage{}, &resource.Pagination{})
 }
 
 func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts ListOptions) {

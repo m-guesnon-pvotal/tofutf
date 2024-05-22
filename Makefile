@@ -146,4 +146,4 @@ publish:
 	helm push ./hack/charts/tofutf-$(VERSION).tgz oci://ghcr.io/tofutf/tofutf/charts
 
 publish-dev:
-	KO_DOCKER_REPO=ghcr.io/tofutf/tofutf/ ko build --base-import-paths -t dev ./cmd/tofutfd
+	VERSION=dev ko build --local --base-import-paths -t dev ./cmd/tofutfd
