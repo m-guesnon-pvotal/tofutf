@@ -183,7 +183,7 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 		run.AllowEmptyApply = *opts.AllowEmptyApply
 	}
 	if user, _ := user.UserFromContext(ctx); user != nil {
-		run.CreatedBy = &user.Username
+		run.CreatedBy = &user.ID
 	}
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy

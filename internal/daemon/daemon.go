@@ -88,7 +88,7 @@ type (
 // New builds a new daemon and establishes a connection to the database and
 // migrates it to the latest schema. Close() should be called to close this
 // connection.
-func New(ctx context.Context, logger logr.Logger, cfg Config) (*Daemon, error) {
+func New(ctx context.Context, logger *logr.Logger, cfg Config) (*Daemon, error) {
 	if cfg.DevMode {
 		logger.Info("enabled developer mode")
 	}

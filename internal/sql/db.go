@@ -24,12 +24,12 @@ type (
 	// SQL
 	DB struct {
 		*pgxpool.Pool // db connection pool
-		logr.Logger
+		*logr.Logger
 	}
 
 	// Options for constructing a DB
 	Options struct {
-		Logger     logr.Logger
+		Logger     *logr.Logger
 		ConnString string
 	}
 

@@ -120,6 +120,7 @@ func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
+
 	a.Respond(w, r, converted, http.StatusOK)
 }
 
@@ -429,8 +430,7 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		Apply: &types.Apply{ID: internal.ConvertID(from.ID, "apply")},
 		// TODO: populate with real user.
 		CreatedBy: &types.User{
-			ID:       "user-123",
-			Username: "otf",
+			ID: *from.CreatedBy, // FIXME
 		},
 		ConfigurationVersion: &types.ConfigurationVersion{
 			ID: from.ConfigurationVersionID,

@@ -147,3 +147,4 @@ publish:
 
 publish-dev:
 	VERSION=dev ko build --local --base-import-paths -t dev ./cmd/tofutfd
+	VERSION=dev ko build --local --base-import-paths -t dev ./cmd/tofutf-agent
