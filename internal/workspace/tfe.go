@@ -249,7 +249,10 @@ func (a *tfe) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 	ws, err := a.Lock(r.Context(), id, nil)
 	if err != nil {
 		if errors.Is(err, ErrWorkspaceAlreadyLocked) {
-			http.Error(w, "", http.StatusConflict)
+			tfeapi.Error(w, &internal.HTTPError{
+				Code:    http.StatusConflict,
+				Message: err.Error(),
+			})
 		} else {
 			tfeapi.Error(w, err)
 		}

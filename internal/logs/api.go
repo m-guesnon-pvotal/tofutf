@@ -33,18 +33,18 @@ func (a *api) getLogs(w http.ResponseWriter, r *http.Request) {
 	var opts internal.GetChunkOptions
 	if err := decode.All(&opts, r); err != nil {
 		a.svc.logger.Error("failed to decode get logs options", "err", err)
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		otfapi.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 	chunk, err := a.svc.GetChunk(r.Context(), opts)
 	if err != nil {
 		a.svc.logger.Error("failed to copy buffer", "err", err)
-		http.Error(w, err.Error(), http.StatusNotFound)
+		otfapi.HandleError(w, err, http.StatusNotFound)
 		return
 	}
 	if _, err := w.Write(chunk.Data); err != nil {
 		a.svc.logger.Error("failed to put logs", "err", err)
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		otfapi.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 }
@@ -53,19 +53,19 @@ func (a *api) putLogs(w http.ResponseWriter, r *http.Request) {
 	var opts internal.PutChunkOptions
 	if err := decode.All(&opts, r); err != nil {
 		a.svc.logger.Error("failed to decode put logs options", "err", err)
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		otfapi.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 	buf := new(bytes.Buffer)
 	if _, err := io.Copy(buf, r.Body); err != nil {
 		a.svc.logger.Error("failed to copy buffer", "err", err)
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		otfapi.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 	opts.Data = buf.Bytes()
 	if err := a.svc.PutChunk(r.Context(), opts); err != nil {
 		a.svc.logger.Error("failed to put logs", "err", err)
-		http.Error(w, err.Error(), http.StatusNotFound)
+		otfapi.HandleError(w, err, http.StatusNotFound)
 		return
 	}
 }

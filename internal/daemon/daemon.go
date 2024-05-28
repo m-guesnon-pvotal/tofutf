@@ -4,6 +4,7 @@ package daemon
 import (
 	"context"
 	"fmt"
+	"github.com/tofutf/tofutf/internal/runtrigger"
 	"log/slog"
 	"net"
 	"time"
@@ -270,6 +271,16 @@ func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Daemon, error) 
 		ReleasesService:      releasesService,
 		TokensService:        tokensService,
 	})
+
+	runTriggerService := runtrigger.NewService(runtrigger.Options{
+		Logger:           logger,
+		DB:               db,
+		Renderer:         renderer,
+		Responder:        responder,
+		WorkspaceService: workspaceService,
+		RunService:       runService,
+		SiteToken:        cfg.SiteToken,
+	})
 	logsService := logs.NewService(logs.Options{
 		Logger:        logger,
 		DB:            db,
@@ -414,6 +425,7 @@ func New(ctx context.Context, logger *slog.Logger, cfg Config) (*Daemon, error) 
 		moduleService,
 		providerService,
 		runService,
+		runTriggerService,
 		logsService,
 		repoService,
 		authenticatorService,

@@ -162,7 +162,7 @@ func NewServerDaemon(logger *slog.Logger, cfg Config, opts ServerDaemonOptions) 
 
 // NewPoolDaemon constructs a pool agent daemon that communicates with the otfd server via RPC.
 func NewPoolDaemon(logger *slog.Logger, cfg Config, apiConfig otfapi.Config) (*daemon, error) {
-	rpcClient, err := newRPCDaemonClient(apiConfig, nil)
+	rpcClient, err := newRPCDaemonClient(apiConfig, nil, logger)
 	if err != nil {
 		return nil, err
 	}

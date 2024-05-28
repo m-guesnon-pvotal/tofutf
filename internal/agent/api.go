@@ -45,7 +45,7 @@ func (a *api) addHandlers(r *mux.Router) {
 func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 	var opts registerAgentOptions
 	if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		otfapi.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -54,7 +54,7 @@ func (a *api) registerAgent(w http.ResponseWriter, r *http.Request) {
 
 	agent, err := a.Service.registerAgent(r.Context(), opts)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		otfapi.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -65,13 +65,13 @@ func (a *api) getJobs(w http.ResponseWriter, r *http.Request) {
 	// retrieve subject, which contains ID of calling agent
 	subject, err := poolAgentFromContext(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		otfapi.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 
 	jobs, err := a.Service.getAgentJobs(r.Context(), subject.agent.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		otfapi.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -83,13 +83,13 @@ func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 	// retrieve subject, which contains ID of calling agent
 	subject, err := poolAgentFromContext(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		otfapi.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 
 	var params updateAgentStatusParams
 	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		otfapi.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -98,7 +98,7 @@ func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 		if errors.Is(err, ErrInvalidAgentStateTransition) {
 			tfeapi.Error(w, err)
 		} else {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			otfapi.HandleError(w, err, http.StatusInternalServerError)
 		}
 		return
 	}
@@ -107,7 +107,7 @@ func (a *api) updateStatus(w http.ResponseWriter, r *http.Request) {
 func (a *api) createAgentToken(w http.ResponseWriter, r *http.Request) {
 	poolID, err := decode.Param("pool_id", r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		otfapi.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 	var opts CreateAgentTokenOptions

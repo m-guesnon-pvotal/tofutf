@@ -3,6 +3,7 @@ package ghapphandler
 
 import (
 	"errors"
+	"github.com/tofutf/tofutf/internal/api"
 	"log/slog"
 	"net/http"
 
@@ -32,7 +33,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 400
 	app, err := h.GithubApps.GetApp(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		api.HandleError(w, err, http.StatusBadRequest)
 		return
 	}
 	h.Logger.Debug("received vcs event", "github_app", app)
@@ -47,14 +48,14 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		h.Logger.Error("handling vcs event", "github_app", app, "err", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		api.HandleError(w, err, http.StatusBadRequest)
 		return
 	}
 	// relay a copy of the event for each vcs provider configured with the
 	// github app install that triggered the event.
 	providers, err := h.VCSProviders.ListVCSProvidersByGithubAppInstall(ctx, *payload.GithubAppInstallID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		api.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 	for _, prov := range providers {

@@ -91,14 +91,14 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 			if token := r.Header.Get(googleIAPHeader); token != "" {
 				subject, err = mw.validateIAPToken(ctx, token)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusUnauthorized)
+					otfapi.HandleError(w, err, http.StatusUnauthorized)
 					return
 				}
 			} else if bearer := r.Header.Get("Authorization"); bearer != "" {
 				subject, err = mw.validateBearer(ctx, bearer)
 				if err != nil {
 					mw.logger.Error("validating bearer token", "err", err)
-					http.Error(w, err.Error(), http.StatusUnauthorized)
+					otfapi.HandleError(w, err, http.StatusUnauthorized)
 					return
 				}
 			} else if strings.HasPrefix(r.URL.Path, paths.UIPrefix) {
@@ -109,7 +109,7 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 					return
 				}
 			} else {
-				http.Error(w, "no authentication token found", http.StatusUnauthorized)
+				otfapi.HandleError(w, errors.New("no authentication token found"), http.StatusUnauthorized)
 				return
 			}
 			ctx = internal.AddSubjectToContext(r.Context(), subject)

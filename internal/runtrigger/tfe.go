@@ -1,12 +1,11 @@
 package runtrigger
 
 import (
+	"github.com/hashicorp/jsonapi"
 	"net/http"
 
-	"github.com/tofutf/tofutf/internal"
-	"github.com/tofutf/tofutf/internal/resource"
-
 	"github.com/gorilla/mux"
+	"github.com/tofutf/tofutf/internal"
 	"github.com/tofutf/tofutf/internal/http/decode"
 	"github.com/tofutf/tofutf/internal/tfeapi"
 
@@ -32,7 +31,8 @@ func (a *tfe) addHandlers(r *mux.Router) {
 
 func (a *tfe) toRunTrigger(from *RunTrigger) *types.RunTrigger {
 	to := &types.RunTrigger{
-		ID: from.RunTriggerID,
+		ID:        from.RunTriggerID,
+		CreatedAt: from.CreatedAt,
 		Workspace: &types.Workspace{
 			ID: from.WorkspaceID,
 		},
@@ -56,10 +56,23 @@ func (a *tfe) getRunTrigger(w http.ResponseWriter, r *http.Request) {
 	}
 	rt, err := a.GetRunTrigger(r.Context(), params.RunTriggerID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		tfeapi.Error(w, &internal.HTTPError{
+			Code:    http.StatusNotFound,
+			Message: err.Error(),
+		})
 		return
 	}
-	a.Respond(w, r, a.toRunTrigger(rt), http.StatusOK)
+
+	err = jsonapi.MarshalPayload(w, a.toRunTrigger(rt))
+	if err != nil {
+		tfeapi.Error(w, &internal.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run-triggers#list-run-triggers
@@ -74,16 +87,31 @@ func (a *tfe) listRunTriggers(w http.ResponseWriter, r *http.Request) {
 
 	rts, err := a.ListByWorkspaceID(r.Context(), params.WorkspaceID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		tfeapi.Error(w, &internal.HTTPError{
+			Code:    http.StatusNotFound,
+			Message: err.Error(),
+		})
 		return
 	}
-	items := make([]*types.RunTrigger, 0)
-
-	for _, rt := range rts {
-		items = append(items, a.toRunTrigger(rt))
+	resp := types.RunTriggerList{
+		Items:      make([]*types.RunTrigger, 0),
+		Pagination: &types.Pagination{},
 	}
 
-	a.RespondWithPage(w, r, items, &resource.Pagination{})
+	for _, rt := range rts {
+		resp.Items = append(resp.Items, a.toRunTrigger(rt))
+	}
+
+	err = jsonapi.MarshalPayload(w, resp)
+	if err != nil {
+		tfeapi.Error(w, &internal.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run-triggers#create-a-run-trigger
@@ -97,7 +125,7 @@ func (a *tfe) addRunTrigger(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var opts types.RunTriggerCreateOptions
-	if err := tfeapi.Unmarshal(r.Body, &opts); err != nil {
+	if err := jsonapi.UnmarshalPayload(r.Body, &opts); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -107,11 +135,25 @@ func (a *tfe) addRunTrigger(w http.ResponseWriter, r *http.Request) {
 	if opts.Sourceable != nil {
 		createOpts.SourceableID = opts.Sourceable.ID
 		createOpts.SourceableType = WorkspaceSourceable
-		if _, err := a.Create(r.Context(), params.WorkspaceID, createOpts); err != nil {
+		if rt, err := a.Create(r.Context(), params.WorkspaceID, createOpts); err != nil {
 			tfeapi.Error(w, err)
 			return
+		} else {
+			resp := a.toRunTrigger(rt)
+			err = jsonapi.MarshalPayload(w, resp)
+			if err != nil {
+
+				tfeapi.Error(w, &internal.HTTPError{
+					Code:    http.StatusInternalServerError,
+					Message: err.Error(),
+				})
+				return
+			}
+
+			w.WriteHeader(http.StatusCreated)
+			return
 		}
-		w.WriteHeader(http.StatusCreated)
+
 	}
 	tfeapi.Error(w, &internal.HTTPError{
 		Code:    http.StatusBadRequest,

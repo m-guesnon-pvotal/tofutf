@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"io"
 	"log/slog"
 	"os"
@@ -36,17 +35,6 @@ func main() {
 		cancel()
 	}()
 
-	defer func() {
-		fmt.Printf("Closing app")
-		if x := recover(); x != nil {
-			// recovering from a panic; x contains whatever was passed to panic()
-			fmt.Printf("run time panic: %v", x)
-
-			// if you just want to log the panic, panic again
-			panic(x)
-		}
-	}()
-
 	cfg := profiler.Config{
 		Service:        "tofutf",
 		ServiceVersion: "0.9.1",
@@ -63,12 +51,10 @@ func main() {
 	if err := profiler.Start(cfg); err != nil {
 		cmdutil.PrintError(err)
 	}
-	fmt.Printf("Starting\n")
 
-	if err := parseFlags(ctx, os.Args[1:], os.Stderr); err != nil {
+	if err := parseFlags(ctx, os.Args[1:], os.Stdout); err != nil {
 		cmdutil.PrintError(err)
 	}
-	fmt.Printf("Exited\n")
 }
 
 func parseFlags(ctx context.Context, args []string, out io.Writer) error {
@@ -88,6 +74,8 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 
 			// Confer superuser privileges on all calls to service endpoints
 			ctx := internal.AddSubjectToContext(cmd.Context(), &internal.Superuser{Username: "app-user"})
+
+			slog.SetDefault(logger)
 
 			d, err := daemon.New(ctx, logger, cfg)
 			if err != nil {

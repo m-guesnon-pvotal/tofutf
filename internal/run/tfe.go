@@ -286,7 +286,11 @@ func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := w.Write(json); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		tfeapi.Error(w, &internal.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		})
+
 		return
 	}
 }
@@ -428,14 +432,15 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		// Relations
 		Plan:  &types.Plan{ID: internal.ConvertID(from.ID, "plan")},
 		Apply: &types.Apply{ID: internal.ConvertID(from.ID, "apply")},
-		// TODO: populate with real user.
-		CreatedBy: &types.User{
-			ID: *from.CreatedBy, // FIXME
-		},
 		ConfigurationVersion: &types.ConfigurationVersion{
 			ID: from.ConfigurationVersionID,
 		},
 		Workspace: &types.Workspace{ID: from.WorkspaceID},
+	}
+	if from.CreatedBy != nil {
+		to.CreatedBy = &types.User{
+			ID: *from.CreatedBy, // FIXME
+		}
 	}
 	to.Variables = make([]types.RunVariable, len(from.Variables))
 	for i, from := range from.Variables {

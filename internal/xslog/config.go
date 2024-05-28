@@ -45,7 +45,7 @@ func New(cfg *Config) (*slog.Logger, error) {
 	case JSONFormat:
 		h = slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: level, AddSource: true})
 	default:
-		return &slog.Logger{}, fmt.Errorf("unrecognised logging format: %s", cfg.Format)
+		return &slog.Logger{}, fmt.Errorf("unrecognized logging format: %s", cfg.Format)
 	}
 
 	return slog.New(h), nil

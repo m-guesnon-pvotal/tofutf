@@ -1,6 +1,7 @@
 package runtrigger
 
 import (
+	"github.com/tofutf/tofutf/internal"
 	"time"
 )
 
@@ -28,6 +29,8 @@ func NewRunTrigger(workspaceID string, opts CreateOptions) *RunTrigger {
 
 	// Unused SourceableType. This is for later support
 	rt := &RunTrigger{
+		RunTriggerID: internal.NewID("rt"),
+		CreatedAt:    internal.CurrentTimestamp(nil),
 		WorkspaceID:  workspaceID,
 		SourceableID: opts.SourceableID,
 	}

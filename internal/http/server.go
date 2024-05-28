@@ -1,9 +1,11 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -119,12 +121,33 @@ func NewServer(logger *slog.Logger, cfg ServerConfig) (*Server, error) {
 	if cfg.EnableRequestLogging {
 		r.Use(func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var body string
+				if logger.Enabled(r.Context(), slog.LevelDebug) {
+					if r.Body != nil {
+						buf, err := io.ReadAll(r.Body)
+						if err != nil {
+							logger.Error("failed to read request body", "err", err)
+						} else {
+							body = string(buf)
+							r.Body = io.NopCloser(bytes.NewBuffer(buf))
+						}
+					}
+				}
 				m := httpsnoop.CaptureMetrics(next, w, r)
-				logger.Info("request",
-					"duration", fmt.Sprintf("%dms", m.Duration.Milliseconds()),
-					"status", m.Code,
-					"method", r.Method,
-					"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
+				if body != "" {
+					logger.Info("request",
+						"duration", fmt.Sprintf("%dms", m.Duration.Milliseconds()),
+						"status", m.Code,
+						"method", r.Method,
+						"payload", body,
+						"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
+				} else {
+					logger.Info("request",
+						"duration", fmt.Sprintf("%dms", m.Duration.Milliseconds()),
+						"status", m.Code,
+						"method", r.Method,
+						"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
+				}
 			})
 		})
 	}

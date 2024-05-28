@@ -22,7 +22,7 @@ func (result dbresult) toRunTrigger() *RunTrigger {
 		RunTriggerID: result.RunTriggerID.String,
 		CreatedAt:    result.CreatedAt.Time,
 		SourceableID: result.SourceableID.String,
-		WorkspaceID:  result.SourceableID.String,
+		WorkspaceID:  result.WorkspaceID.String,
 	}
 	return &rt
 }

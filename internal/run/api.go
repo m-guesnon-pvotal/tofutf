@@ -31,12 +31,12 @@ func (a *api) addHandlers(r *mux.Router) {
 func (a *api) list(w http.ResponseWriter, r *http.Request) {
 	var params ListOptions
 	if err := decode.All(&params, r); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		otfapi.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 	page, err := a.List(r.Context(), params)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		otfapi.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 	a.RespondWithPage(w, r, page.Items, page.Pagination)
@@ -50,7 +50,7 @@ func (a *api) get(w http.ResponseWriter, r *http.Request) {
 	}
 	run, err := a.Get(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		otfapi.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 	a.Respond(w, r, run, http.StatusOK)
@@ -73,7 +73,7 @@ func (a *api) getPlanFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := w.Write(file); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		otfapi.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 }
@@ -113,7 +113,7 @@ func (a *api) getLockFile(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := w.Write(file); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		otfapi.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 }

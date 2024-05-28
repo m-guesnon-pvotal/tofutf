@@ -79,8 +79,8 @@ type (
 
 // newRPCDaemonClient constructs a daemon client that communicates with services
 // via RPC
-func newRPCDaemonClient(cfg otfapi.Config, agentID *string) (*daemonClient, error) {
-	apiClient, err := otfapi.NewClient(cfg)
+func newRPCDaemonClient(cfg otfapi.Config, agentID *string, logger *slog.Logger) (*daemonClient, error) {
+	apiClient, err := otfapi.NewClient(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
@@ -111,5 +111,5 @@ func (c *daemonClient) newJobClient(agentID string, token []byte, logger *slog.L
 			}
 			logger.Error("retrying request", "url", r.URL, "attempt", n)
 		},
-	}, &agentID)
+	}, &agentID, logger)
 }

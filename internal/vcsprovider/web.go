@@ -211,7 +211,7 @@ func (h *webHandlers) list(w http.ResponseWriter, r *http.Request) {
 	}
 	app, err := h.githubApps.GetApp(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	providers, err := h.client.List(r.Context(), org)

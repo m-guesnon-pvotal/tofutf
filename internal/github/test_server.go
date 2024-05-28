@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"github.com/tofutf/tofutf/internal/api"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -159,7 +160,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 				} `json:"config"`
 			}
 			if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
-				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				api.HandleError(w, err, http.StatusUnprocessableEntity)
 				return
 			}
 			// persist hook to the 'db'
@@ -200,7 +201,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 					} `json:"config"`
 				}
 				if err := json.NewDecoder(r.Body).Decode(&opts); err != nil {
-					http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+					api.HandleError(w, err, http.StatusUnprocessableEntity)
 					return
 				}
 				// persist hook to the 'db'
@@ -244,7 +245,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 		srv.mux.HandleFunc("/api/v3/repos/"+*srv.repo+"/statuses/", func(w http.ResponseWriter, r *http.Request) {
 			var commit github.StatusEvent
 			if err := json.NewDecoder(r.Body).Decode(&commit); err != nil {
-				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				api.HandleError(w, err, http.StatusUnprocessableEntity)
 				return
 			}
 			srv.statuses <- &commit
@@ -260,7 +261,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 			}
 			out, err := json.Marshal(commits)
 			if err != nil {
-				http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+				api.HandleError(w, err, http.StatusUnprocessableEntity)
 				return
 			}
 			w.Header().Add("Content-Type", "application/json")
@@ -277,7 +278,7 @@ func NewTestServer(t *testing.T, opts ...TestServerOption) (*TestServer, *url.UR
 					},
 				})
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+					api.HandleError(w, err, http.StatusUnprocessableEntity)
 					return
 				}
 				w.Header().Add("Content-Type", "application/json")

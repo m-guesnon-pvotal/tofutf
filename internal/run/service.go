@@ -325,18 +325,19 @@ func (s *Service) FinishPhase(ctx context.Context, runID string, phase internal.
 		if autoapply {
 			return s.Apply(ctx, runID)
 		}
-		if !opts.Errored && phase == internal.ApplyPhase {
+		if !opts.Errored && (run.Status == RunApplied || run.Status == RunPlannedAndFinished) {
+			s.logger.Debug("Invoking afterSuccessfulApplyHooks", "id", runID)
 			// invoke AfterEnqueueApply hooks
 			for _, hook := range s.afterSuccessfulApplyHooks {
 				if err := hook(ctx, run); err != nil {
-					return err
+					s.logger.Error("Failed to invoke afterSuccessfulApply hooks", "id", runID, "err", err)
 				}
 			}
 		}
 		return nil
 	})
 	if err != nil {
-		s.logger.Error("finishing "+string(phase), "id", runID, "subject", "err", err)
+		s.logger.Error("finishing "+string(phase), "id", runID, "err", err)
 		return nil, err
 	}
 

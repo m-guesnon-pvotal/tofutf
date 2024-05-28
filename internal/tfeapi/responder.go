@@ -43,7 +43,11 @@ func (res *Responder) Respond(w http.ResponseWriter, r *http.Request, payload an
 		Error(w, err)
 		return
 	}
+	res.RespondRaw(w, r, b, status)
+}
+
+func (res *Responder) RespondRaw(w http.ResponseWriter, r *http.Request, payload []byte, status int) {
 	w.Header().Set("Content-type", mediaType)
 	w.WriteHeader(status)
-	w.Write(b) //nolint:errcheck
+	w.Write(payload) //nolint:errcheck
 }

@@ -3,6 +3,7 @@ package repohooks
 import (
 	"context"
 	"errors"
+	"github.com/tofutf/tofutf/internal/api"
 	"log/slog"
 	"net/http"
 	"path"
@@ -60,12 +61,12 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 		ID uuid.UUID `schema:"webhook_id,required"`
 	}
 	if err := decode.All(&opts, r); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		api.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 	hook, err := h.getHookByID(r.Context(), opts.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		api.HandleError(w, err, http.StatusNotFound)
 		return
 	}
 	h.logger.Debug("received vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
@@ -86,7 +87,7 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else if err != nil {
 		h.logger.Error("handling vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud, "err", err)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		api.HandleError(w, err, http.StatusBadRequest)
 		return
 	}
 	h.Publish(vcs.Event{

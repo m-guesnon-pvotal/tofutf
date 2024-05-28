@@ -36,13 +36,13 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/schema v1.3.0
 	github.com/hashicorp/go-retryablehttp v0.7.6
-	github.com/hashicorp/go-tfe v1.53.0
+	github.com/hashicorp/go-tfe v1.50.0
 	github.com/hashicorp/hcl/v2 v2.20.1
+	github.com/hashicorp/jsonapi v1.3.1
 	github.com/hashicorp/terraform-config-inspect v0.0.0-20240509232506-4708120f8f30
 	github.com/iancoleman/strcase v0.3.0
 	github.com/jackc/pgconn v1.14.3
 	github.com/jackc/pgtype v1.14.3
-	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jackc/pgx/v4 v4.18.2
 	github.com/jaschaephraim/lrserver v0.0.0-00010101000000-000000000000
 	github.com/leg100/surl v0.0.6
@@ -112,13 +112,11 @@ require (
 	github.com/hashicorp/go-slug v0.15.0 // indirect
 	github.com/hashicorp/go-version v1.6.0 // indirect
 	github.com/hashicorp/hcl v0.0.0-20170504190234-a4b07c25de5f // indirect
-	github.com/hashicorp/jsonapi v1.3.1 // indirect
 	github.com/huandu/xstrings v1.3.3 // indirect
 	github.com/imdario/mergo v0.3.11 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/itchyny/base58-go v0.2.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
-	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.3 // indirect

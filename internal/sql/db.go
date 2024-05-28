@@ -43,6 +43,22 @@ type (
 	}
 )
 
+type dbLogger struct {
+	srcLogger *slog.Logger
+}
+
+func (dbl *dbLogger) Log(ctx context.Context, level pgx.LogLevel, msg string, data map[string]interface{}) {
+	if dbl.srcLogger.Enabled(ctx, slog.LevelDebug) {
+		args := make([]any, 0)
+		for k, v := range data {
+			args = append(args, k)
+			args = append(args, v)
+		}
+		dbl.srcLogger.DebugContext(ctx, msg, args...)
+
+	}
+}
+
 // New constructs a new DB connection pool, and migrates the schema to the
 // latest version.
 func New(ctx context.Context, opts Options) (*DB, error) {
@@ -54,7 +70,16 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 		return nil, err
 	}
 
-	pool, err := pgxpool.Connect(ctx, connString)
+	config, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		return nil, err
+	}
+
+	config.ConnConfig.Logger = &dbLogger{
+		srcLogger: opts.Logger,
+	}
+
+	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
