@@ -132,7 +132,7 @@ func (a *Service) GetRunTrigger(ctx context.Context, rtID string) (*RunTrigger, 
 
 // ListByWorkspaceID lists all run triggers for a given workspace.
 func (a *Service) ListByWorkspaceID(ctx context.Context, workspaceID string) ([]*RunTrigger, error) {
-	subject, err := a.WorkspaceService.CanAccess(ctx, rbac.ListWorkspacesAction, "")
+	subject, err := a.WorkspaceService.CanAccess(ctx, rbac.ListWorkspacesAction, workspaceID)
 	if err != nil {
 		a.logger.Error("listing run triggers", "workspace", workspaceID, "subject", subject, "err", err)
 		return nil, err
@@ -150,7 +150,7 @@ func (a *Service) ListByWorkspaceID(ctx context.Context, workspaceID string) ([]
 
 // ListBySourceableID lists all run triggers for a given sourceable.
 func (a *Service) ListBySourceableID(ctx context.Context, sourceableID string, sourceableType SourceableType) ([]*RunTrigger, error) {
-	subject, err := a.WorkspaceService.CanAccess(ctx, rbac.ListWorkspacesAction, "")
+	subject, err := a.WorkspaceService.CanAccess(ctx, rbac.ListWorkspacesAction, sourceableID)
 	if err != nil {
 		a.logger.Error("listing run triggers", "sourceable", sourceableID, "subject", subject, "err", err)
 		return nil, err

@@ -325,7 +325,7 @@ func (s *Service) FinishPhase(ctx context.Context, runID string, phase internal.
 		if autoapply {
 			return s.Apply(ctx, runID)
 		}
-		if !opts.Errored && (run.Status == RunApplied || run.Status == RunPlannedAndFinished) {
+		if !opts.Errored && !run.PlanOnly && (run.Status == RunApplied || run.Status == RunPlannedAndFinished) {
 			s.logger.Debug("Invoking afterSuccessfulApplyHooks", "id", runID)
 			// invoke AfterEnqueueApply hooks
 			for _, hook := range s.afterSuccessfulApplyHooks {

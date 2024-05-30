@@ -134,6 +134,7 @@ func NewServer(logger *slog.Logger, cfg ServerConfig) (*Server, error) {
 					}
 				}
 				m := httpsnoop.CaptureMetrics(next, w, r)
+
 				if body != "" {
 					logger.Info("request",
 						"duration", fmt.Sprintf("%dms", m.Duration.Milliseconds()),

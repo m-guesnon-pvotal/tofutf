@@ -8,12 +8,18 @@ import (
 	"reflect"
 
 	"github.com/gorilla/mux"
+	types "github.com/hashicorp/go-tfe"
+	"github.com/hashicorp/jsonapi"
 	"github.com/tofutf/tofutf/internal"
 	"github.com/tofutf/tofutf/internal/http/decode"
 	"github.com/tofutf/tofutf/internal/rbac"
 	"github.com/tofutf/tofutf/internal/resource"
 	"github.com/tofutf/tofutf/internal/tfeapi"
-	"github.com/tofutf/tofutf/internal/tfeapi/types"
+)
+
+var (
+	remoteExecutionMode = "remote"
+	localExecutionMode  = "local"
 )
 
 type (
@@ -22,6 +28,14 @@ type (
 	byWorkspaceName struct {
 		Name         string `schema:"workspace_name,required"`
 		Organization string `schema:"organization_name,required"`
+	}
+
+	byOrganizationName struct {
+		Organization string `schema:"organization_name,required"`
+	}
+
+	byWorkspaceID struct {
+		WorkspaceID string `schema:"workspace_id,required"`
 	}
 
 	// tfe implements the TFC/E workspaces API:
@@ -51,12 +65,13 @@ func (a *tfe) addHandlers(r *mux.Router) {
 }
 
 func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
-	var params types.WorkspaceCreateOptions
-	if err := decode.Route(&params, r); err != nil {
+	var routeParams byOrganizationName
+	if err := decode.Route(&routeParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+	var params WorkspaceCreateOptions
+	if err := jsonapi.UnmarshalPayload(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -70,7 +85,7 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		GlobalRemoteState:          params.GlobalRemoteState,
 		MigrationEnvironment:       params.MigrationEnvironment,
 		Name:                       params.Name,
-		Organization:               params.Organization,
+		Organization:               &routeParams.Organization,
 		QueueAllRuns:               params.QueueAllRuns,
 		SpeculativeEnabled:         params.SpeculativeEnabled,
 		SourceName:                 params.SourceName,
@@ -124,17 +139,18 @@ func (a *tfe) createWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, converted, http.StatusCreated)
+	a.JsonAPIResponse(w, r, http.StatusOK, converted, nil)
+
 }
 
 func (a *tfe) getWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("workspace_id", r)
-	if err != nil {
+	var routeParams byWorkspaceID
+	if err := decode.Route(&routeParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	ws, err := a.Get(r.Context(), id)
+	ws, err := a.Get(r.Context(), routeParams.WorkspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -145,7 +161,9 @@ func (a *tfe) getWorkspace(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
-	a.Respond(w, r, converted, http.StatusOK)
+
+	a.JsonAPIResponse(w, r, http.StatusOK, converted, nil)
+
 }
 
 func (a *tfe) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
@@ -167,12 +185,21 @@ func (a *tfe) getWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, converted, http.StatusOK)
+	err = jsonapi.MarshalPayload(w, converted)
+	if err != nil {
+		tfeapi.Error(w, &internal.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		})
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
 }
 
 func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
-	organization, err := decode.Param("organization_name", r)
-	if err != nil {
+	var routeParams byOrganizationName
+	if err := decode.Route(&routeParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -184,7 +211,7 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 
 	page, err := a.List(r.Context(), ListOptions{
 		Search:       params.Search,
-		Organization: &organization,
+		Organization: &routeParams.Organization,
 		PageOptions:  resource.PageOptions(params.ListOptions),
 		Tags:         internal.SplitCSV(params.Tags),
 	})
@@ -196,28 +223,30 @@ func (a *tfe) listWorkspaces(w http.ResponseWriter, r *http.Request) {
 	// convert items
 	items := make([]*types.Workspace, len(page.Items))
 	for i, from := range page.Items {
-		to, err := a.convert(from, r)
-		if err != nil {
+		a.logger.Info("found", "item", from)
+		if to, err := a.convert(from, r); err != nil {
 			tfeapi.Error(w, err)
 			return
+		} else {
+			items[i] = to
 		}
-		items[i] = to
 	}
 
-	a.RespondWithPage(w, r, items, page.Pagination)
+	a.JsonAPIResponse(w, r, http.StatusOK, items, page.Pagination)
+
 }
 
 // updateWorkspaceByID updates a workspace using its ID.
 //
 // TODO: support updating workspace's vcs repo.
 func (a *tfe) updateWorkspaceByID(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
-	if err != nil {
+	var routeParams byWorkspaceID
+	if err := decode.Route(&routeParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	a.updateWorkspace(w, r, workspaceID)
+	a.updateWorkspace(w, r, routeParams.WorkspaceID)
 }
 
 // updateWorkspaceByName updates a workspace using its name and organization.
@@ -240,13 +269,13 @@ func (a *tfe) updateWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) lockWorkspace(w http.ResponseWriter, r *http.Request) {
-	id, err := decode.Param("workspace_id", r)
-	if err != nil {
+	var routeParams byWorkspaceID
+	if err := decode.Route(&routeParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	ws, err := a.Lock(r.Context(), id, nil)
+	ws, err := a.Lock(r.Context(), routeParams.WorkspaceID, nil)
 	if err != nil {
 		if errors.Is(err, ErrWorkspaceAlreadyLocked) {
 			tfeapi.Error(w, &internal.HTTPError{
@@ -265,7 +294,8 @@ func (a *tfe) lockWorkspace(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	a.Respond(w, r, converted, http.StatusOK)
+	a.JsonAPIResponse(w, r, http.StatusOK, converted, nil)
+
 }
 
 func (a *tfe) unlockWorkspace(w http.ResponseWriter, r *http.Request) {
@@ -277,13 +307,13 @@ func (a *tfe) forceUnlockWorkspace(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
-	id, err := decode.Param("workspace_id", r)
-	if err != nil {
+	var routeParams byWorkspaceID
+	if err := decode.Route(&routeParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	ws, err := a.Unlock(r.Context(), id, nil, force)
+	ws, err := a.Unlock(r.Context(), routeParams.WorkspaceID, nil, force)
 	if err != nil {
 		if errors.Is(err, ErrWorkspaceAlreadyUnlocked) || errors.Is(err, ErrWorkspaceLockedByRun) {
 			tfeapi.Error(w, &internal.HTTPError{
@@ -302,17 +332,18 @@ func (a *tfe) unlock(w http.ResponseWriter, r *http.Request, force bool) {
 		return
 	}
 
-	a.Respond(w, r, converted, http.StatusOK)
+	a.JsonAPIResponse(w, r, http.StatusOK, converted, nil)
+
 }
 
 func (a *tfe) deleteWorkspace(w http.ResponseWriter, r *http.Request) {
-	workspaceID, err := decode.Param("workspace_id", r)
-	if err != nil {
+	var routeParams byWorkspaceID
+	if err := decode.Route(&routeParams, r); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
 
-	_, err = a.Delete(r.Context(), workspaceID)
+	_, err := a.Delete(r.Context(), routeParams.WorkspaceID)
 	if err != nil {
 		tfeapi.Error(w, err)
 		return
@@ -341,12 +372,12 @@ func (a *tfe) deleteWorkspaceByName(w http.ResponseWriter, r *http.Request) {
 }
 
 func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceID string) {
-	params := types.WorkspaceUpdateOptions{}
-	if err := tfeapi.Unmarshal(r.Body, &params); err != nil {
+	params := WorkspaceUpdateOptions{}
+	if err := jsonapi.UnmarshalPayload(r.Body, &params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
-	if err := params.Validate(); err != nil {
+	if err := ValidateWorkspaceUpdate(&params); err != nil {
 		tfeapi.Error(w, err)
 		return
 	}
@@ -376,25 +407,24 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 	// (a) file-triggers-enabled=true and tags-regex=non-nil
 	// (b) file-triggers-enabled=true and trigger-prefixes=empty
 	// (b) trigger-prefixes=non-empty and tags-regex=non-nil
-	if (params.FileTriggersEnabled != nil && !*params.FileTriggersEnabled) && (!params.VCSRepo.Set || !params.VCSRepo.Valid || params.VCSRepo.TagsRegex == nil) {
+	if (params.FileTriggersEnabled != nil && !*params.FileTriggersEnabled) && (params.VCSRepo == nil || params.VCSRepo.TagsRegex == nil) {
 		opts.AlwaysTrigger = internal.Bool(true)
 	}
 
-	if params.VCSRepo.Set {
-		if params.VCSRepo.Valid {
-			// client has provided non-null vcs options, which means they either
-			// want to connect the workspace or modify the connection.
-			opts.ConnectOptions = &ConnectOptions{
-				RepoPath:      params.VCSRepo.Identifier,
-				VCSProviderID: params.VCSRepo.OAuthTokenID,
-				Branch:        params.VCSRepo.Branch,
-				TagsRegex:     params.VCSRepo.TagsRegex,
-			}
-		} else {
-			// client has explicitly set VCS options to null, which means they
-			// want the workspace to be disconnected.
-			opts.Disconnect = true
+	if params.VCSRepo != nil {
+
+		// client has provided non-null vcs options, which means they either
+		// want to connect the workspace or modify the connection.
+		opts.ConnectOptions = &ConnectOptions{
+			RepoPath:      params.VCSRepo.Identifier,
+			VCSProviderID: params.VCSRepo.OAuthTokenID,
+			Branch:        params.VCSRepo.Branch,
+			TagsRegex:     params.VCSRepo.TagsRegex,
 		}
+	} else {
+		// client has explicitly set VCS options to null, which means they
+		// want the workspace to be disconnected.
+		opts.Disconnect = true
 	}
 
 	ws, err := a.Update(r.Context(), workspaceID, opts)
@@ -408,8 +438,8 @@ func (a *tfe) updateWorkspace(w http.ResponseWriter, r *http.Request, workspaceI
 		tfeapi.Error(w, err)
 		return
 	}
+	a.JsonAPIResponse(w, r, http.StatusOK, converted, nil)
 
-	a.Respond(w, r, converted, http.StatusOK)
 }
 
 func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error) {
@@ -441,6 +471,7 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 		},
 		AllowDestroyPlan:     from.AllowDestroyPlan,
 		AutoApply:            from.AutoApply,
+		AutoApplyRunTrigger:  from.AutoApply,
 		CanQueueDestroyPlan:  from.CanQueueDestroyPlan,
 		CreatedAt:            from.CreatedAt,
 		Description:          from.Description,
@@ -467,7 +498,9 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 		Organization:               &types.Organization{Name: from.Organization},
 	}
 	if from.AgentPoolID != nil {
-		to.AgentPoolID = *from.AgentPoolID
+		to.AgentPool = &types.AgentPool{
+			ID: *from.AgentPoolID,
+		}
 	}
 	if len(from.TriggerPrefixes) > 0 || len(from.TriggerPatterns) > 0 {
 		to.FileTriggersEnabled = true
@@ -487,6 +520,7 @@ func (a *tfe) convert(from *Workspace, r *http.Request) (*types.Workspace, error
 	// OTF permits the user to disable this behaviour by ommiting this info and
 	// fool the terraform CLI into thinking its not a workspace with a VCS
 	// connection.
+
 	if from.Connection != nil {
 		if !from.Connection.AllowCLIApply || !tfeapi.IsTerraformCLI(r) {
 			to.VCSRepo = &types.VCSRepo{
@@ -559,4 +593,274 @@ func (a *tfe) includeMany(ctx context.Context, v any) ([]any, error) {
 		}
 	}
 	return include, nil
+}
+
+// Patched types
+
+// WorkspaceCreateOptions represents the options for creating a new workspace.
+type WorkspaceCreateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,workspaces"`
+
+	// Required when: execution-mode is set to agent. The ID of the agent pool
+	// belonging to the workspace's organization. This value must not be specified
+	// if execution-mode is set to remote or local or if operations is set to true.
+	AgentPoolID *string `jsonapi:"attr,agent-pool-id,omitempty"`
+
+	// Optional: Whether destroy plans can be queued on the workspace.
+	AllowDestroyPlan *bool `jsonapi:"attr,allow-destroy-plan,omitempty"`
+
+	// Optional: Whether to enable health assessments (drift detection etc.) for the workspace.
+	// Reference: https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces#create-a-workspace
+	// Requires remote execution mode, Terraform Cloud Business entitlement, and a valid agent pool to work
+	AssessmentsEnabled *bool `jsonapi:"attr,assessments-enabled,omitempty"`
+
+	// Optional: Whether to automatically apply changes when a Terraform plan is successful.
+	AutoApply *bool `jsonapi:"attr,auto-apply,omitempty"`
+
+	// Optional: Whether to automatically apply changes for runs that are created by run triggers
+	// from another workspace.
+	AutoApplyRunTrigger *bool `jsonapi:"attr,auto-apply-run-trigger,omitempty"`
+
+	// Optional: A description for the workspace.
+	Description *string `jsonapi:"attr,description,omitempty"`
+
+	// Optional: Which execution mode to use. Valid values are remote, local, and agent.
+	// When set to local, the workspace will be used for state storage only.
+	// This value must not be specified if operations is specified.
+	// 'agent' execution mode is not available in Terraform Enterprise.
+	ExecutionMode *string `jsonapi:"attr,execution-mode,omitempty"`
+
+	// Optional: Whether to filter runs based on the changed files in a VCS push. If
+	// enabled, the working directory and trigger prefixes describe a set of
+	// paths which must contain changes for a VCS push to trigger a run. If
+	// disabled, any push will trigger a run.
+	FileTriggersEnabled *bool `jsonapi:"attr,file-triggers-enabled,omitempty"`
+
+	GlobalRemoteState *bool `jsonapi:"attr,global-remote-state,omitempty"`
+
+	// Optional: The legacy TFE environment to use as the source of the migration, in the
+	// form organization/environment. Omit this unless you are migrating a legacy
+	// environment.
+	MigrationEnvironment *string `jsonapi:"attr,migration-environment,omitempty"`
+
+	// The name of the workspace, which can only include letters, numbers, -,
+	// and _. This will be used as an identifier and must be unique in the
+	// organization.
+	Name *string `jsonapi:"attr,name"`
+
+	// DEPRECATED. Whether the workspace will use remote or local execution mode.
+	// Use ExecutionMode instead.
+	Operations *bool `jsonapi:"attr,operations,omitempty"`
+
+	// Whether to queue all runs. Unless this is set to true, runs triggered by
+	// a webhook will not be queued until at least one run is manually queued.
+	QueueAllRuns *bool `jsonapi:"attr,queue-all-runs,omitempty"`
+
+	// Whether this workspace allows speculative plans. Setting this to false
+	// prevents Terraform Cloud or the Terraform Enterprise instance from
+	// running plans on pull requests, which can improve security if the VCS
+	// repository is public or includes untrusted contributors.
+	SpeculativeEnabled *bool `jsonapi:"attr,speculative-enabled,omitempty"`
+
+	// BETA. A friendly name for the application or client creating this
+	// workspace. If set, this will be displayed on the workspace as
+	// "Created via <SOURCE NAME>".
+	SourceName *string `jsonapi:"attr,source-name,omitempty"`
+
+	// BETA. A URL for the application or client creating this workspace. This
+	// can be the URL of a related resource in another app, or a link to
+	// documentation or other info about the client.
+	SourceURL *string `jsonapi:"attr,source-url,omitempty"`
+
+	// BETA. Enable the experimental advanced run user interface.
+	// This only applies to runs using Terraform version 0.15.2 or newer,
+	// and runs executed using older versions will see the classic experience
+	// regardless of this setting.
+	StructuredRunOutputEnabled *bool `jsonapi:"attr,structured-run-output-enabled,omitempty"`
+
+	// The version of Terraform to use for this workspace. Upon creating a
+	// workspace, the latest version is selected unless otherwise specified.
+	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty"`
+
+	// List of repository-root-relative paths which list all locations to be
+	// tracked for changes. See FileTriggersEnabled above for more details.
+	TriggerPrefixes []string `jsonapi:"attr,trigger-prefixes,omitempty"`
+
+	// Optional: List of patterns used to match against changed files in order
+	// to decide whether to trigger a run or not.
+	TriggerPatterns []string `jsonapi:"attr,trigger-patterns,omitempty"`
+
+	// Settings for the workspace's VCS repository. If omitted, the workspace is
+	// created without a VCS repo. If included, you must specify at least the
+	// oauth-token-id and identifier keys below.
+	VCSRepo *VCSRepoOptions `jsonapi:"attr,vcs-repo,omitempty"`
+
+	// A relative path that Terraform will execute within. This defaults to the
+	// root of your repository and is typically set to a subdirectory matching the
+	// environment when multiple environments exist within the same repository.
+	WorkingDirectory *string `jsonapi:"attr,working-directory,omitempty"`
+
+	// A list of tags to attach to the workspace. If the tag does not already
+	// exist, it is created and added to the workspace.
+	Tags []*types.Tag `jsonapi:"relation,tags,omitempty"`
+
+	// Optional: Struct of booleans, which indicate whether the workspace
+	// specifies its own values for various settings. If you mark a setting as
+	// `false` in this struct, it will clear the workspace's existing value for
+	// that setting and defer to the default value that its project or
+	// organization provides.
+	//
+	// In general, it's not necessary to mark a setting as `true` in this
+	// struct; if you provide a literal value for a setting, Terraform Cloud will
+	// automatically update its overwrites field to `true`. If you do choose to
+	// manually mark a setting as overwritten, you must provide a value for that
+	// setting at the same time.
+	SettingOverwrites *types.WorkspaceSettingOverwritesOptions `jsonapi:"attr,setting-overwrites,omitempty"`
+
+	// Associated Project with the workspace. If not provided, default project
+	// of the organization will be assigned to the workspace.
+	Project *types.Project `jsonapi:"relation,project,omitempty"`
+}
+
+// WorkspaceUpdateOptions represents the options for updating a workspace.
+type WorkspaceUpdateOptions struct {
+	// Type is a public field utilized by JSON:API to
+	// set the resource type via the field tag.
+	// It is not a user-defined value and does not need to be set.
+	// https://jsonapi.org/format/#crud-creating
+	Type string `jsonapi:"primary,workspaces"`
+
+	// Required when: execution-mode is set to agent. The ID of the agent pool
+	// belonging to the workspace's organization. This value must not be specified
+	// if execution-mode is set to remote or local or if operations is set to true.
+	AgentPoolID *string `jsonapi:"attr,agent-pool-id,omitempty"`
+
+	// Optional: Whether destroy plans can be queued on the workspace.
+	AllowDestroyPlan *bool `jsonapi:"attr,allow-destroy-plan,omitempty"`
+
+	// Optional: Whether to enable health assessments (drift detection etc.) for the workspace.
+	// Reference: https://developer.hashicorp.com/terraform/cloud-docs/api-docs/workspaces#update-a-workspace
+	// Requires remote execution mode, Terraform Cloud Business entitlement, and a valid agent pool to work
+	AssessmentsEnabled *bool `jsonapi:"attr,assessments-enabled,omitempty"`
+
+	// Optional: Whether to automatically apply changes when a Terraform plan is successful.
+	AutoApply *bool `jsonapi:"attr,auto-apply,omitempty"`
+
+	// Optional: Whether to automatically apply changes for runs that are created by run triggers
+	// from another workspace.
+	AutoApplyRunTrigger *bool `jsonapi:"attr,auto-apply-run-trigger,omitempty"`
+
+	// Optional: A new name for the workspace, which can only include letters, numbers, -,
+	// and _. This will be used as an identifier and must be unique in the
+	// organization. Warning: Changing a workspace's name changes its URL in the
+	// API and UI.
+	Name *string `jsonapi:"attr,name,omitempty"`
+
+	// Optional: A description for the workspace.
+	Description *string `jsonapi:"attr,description,omitempty"`
+
+	// Optional: Which execution mode to use. Valid values are remote, local, and agent.
+	// When set to local, the workspace will be used for state storage only.
+	// This value must not be specified if operations is specified.
+	// 'agent' execution mode is not available in Terraform Enterprise.
+	ExecutionMode *string `jsonapi:"attr,execution-mode,omitempty"`
+
+	// Optional: Whether to filter runs based on the changed files in a VCS push. If
+	// enabled, the working directory and trigger prefixes describe a set of
+	// paths which must contain changes for a VCS push to trigger a run. If
+	// disabled, any push will trigger a run.
+	FileTriggersEnabled *bool `jsonapi:"attr,file-triggers-enabled,omitempty"`
+
+	// Optional:
+	GlobalRemoteState *bool `jsonapi:"attr,global-remote-state,omitempty"`
+
+	// DEPRECATED. Whether the workspace will use remote or local execution mode.
+	// Use ExecutionMode instead.
+	Operations *bool `jsonapi:"attr,operations,omitempty"`
+
+	// Optional: Whether to queue all runs. Unless this is set to true, runs triggered by
+	// a webhook will not be queued until at least one run is manually queued.
+	QueueAllRuns *bool `jsonapi:"attr,queue-all-runs,omitempty"`
+
+	// Optional: Whether this workspace allows speculative plans. Setting this to false
+	// prevents Terraform Cloud or the Terraform Enterprise instance from
+	// running plans on pull requests, which can improve security if the VCS
+	// repository is public or includes untrusted contributors.
+	SpeculativeEnabled *bool `jsonapi:"attr,speculative-enabled,omitempty"`
+
+	// BETA. Enable the experimental advanced run user interface.
+	// This only applies to runs using Terraform version 0.15.2 or newer,
+	// and runs executed using older versions will see the classic experience
+	// regardless of this setting.
+	StructuredRunOutputEnabled *bool `jsonapi:"attr,structured-run-output-enabled,omitempty"`
+
+	// Optional: The version of Terraform to use for this workspace.
+	TerraformVersion *string `jsonapi:"attr,terraform-version,omitempty"`
+
+	// Optional: List of repository-root-relative paths which list all locations to be
+	// tracked for changes. See FileTriggersEnabled above for more details.
+	TriggerPrefixes []string `jsonapi:"attr,trigger-prefixes,omitempty"`
+
+	// Optional: List of patterns used to match against changed files in order
+	// to decide whether to trigger a run or not.
+	TriggerPatterns []string `jsonapi:"attr,trigger-patterns,omitempty"`
+
+	// Optional: To delete a workspace's existing VCS repo, specify null instead of an
+	// object. To modify a workspace's existing VCS repo, include whichever of
+	// the keys below you wish to modify. To add a new VCS repo to a workspace
+	// that didn't previously have one, include at least the oauth-token-id and
+	// identifier keys.
+	VCSRepo *VCSRepoOptions `jsonapi:"attr,vcs-repo,omitempty"`
+
+	// Optional: A relative path that Terraform will execute within. This defaults to the
+	// root of your repository and is typically set to a subdirectory matching
+	// the environment when multiple environments exist within the same
+	// repository.
+	WorkingDirectory *string `jsonapi:"attr,working-directory,omitempty"`
+
+	// Optional: Struct of booleans, which indicate whether the workspace
+	// specifies its own values for various settings. If you mark a setting as
+	// `false` in this struct, it will clear the workspace's existing value for
+	// that setting and defer to the default value that its project or
+	// organization provides.
+	//
+	// In general, it's not necessary to mark a setting as `true` in this
+	// struct; if you provide a literal value for a setting, Terraform Cloud will
+	// automatically update its overwrites field to `true`. If you do choose to
+	// manually mark a setting as overwritten, you must provide a value for that
+	// setting at the same time.
+	SettingOverwrites *types.WorkspaceSettingOverwritesOptions `jsonapi:"attr,setting-overwrites,omitempty"`
+
+	// Associated Project with the workspace. If not provided, default project
+	// of the organization will be assigned to the workspace
+	Project *types.Project `jsonapi:"relation,project,omitempty"`
+}
+
+// TODO: move this struct out. VCSRepoOptions is used by workspaces, policy sets, and registry modules
+// VCSRepoOptions represents the configuration options of a VCS integration.
+type VCSRepoOptions struct {
+	Branch            *string `jsonapi:"attr,branch"`
+	Identifier        *string `jsonapi:"attr,identifier"`
+	IngressSubmodules *bool   `jsonapi:"attr,ingress-submodules"`
+	OAuthTokenID      *string `jsonapi:"attr,oauth-token-id"`
+	TagsRegex         *string `jsonapi:"attr,tags-regex"`
+	GHAInstallationID *string `jsonapi:"attr,github-app-installation-id"`
+}
+
+func ValidateWorkspaceUpdate(opts *WorkspaceUpdateOptions) error {
+	if opts.Operations != nil && opts.ExecutionMode != nil {
+		return errors.New("operations is deprecated and cannot be specified when execution mode is used")
+	}
+	if opts.Operations != nil {
+		if *opts.Operations {
+			opts.ExecutionMode = &remoteExecutionMode
+		} else {
+			opts.ExecutionMode = &localExecutionMode
+		}
+	}
+	return nil
 }

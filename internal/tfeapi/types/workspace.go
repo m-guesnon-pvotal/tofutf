@@ -2,13 +2,7 @@ package types
 
 import (
 	"encoding/json"
-	"errors"
 	"time"
-)
-
-var (
-	remoteExecutionMode = "remote"
-	localExecutionMode  = "local"
 )
 
 // Workspace represents a Terraform Enterprise workspace.
@@ -227,107 +221,6 @@ type WorkspaceCreateOptions struct {
 	// A list of tags to attach to the workspace. If the tag does not already
 	// exist, it is created and added to the workspace.
 	Tags []*Tag `jsonapi:"relationship" json:"tags,omitempty"`
-}
-
-// WorkspaceUpdateOptions represents the options for updating a workspace.
-type WorkspaceUpdateOptions struct {
-	// Type is a public field utilized by JSON:API to set the resource type via
-	// the field tag.  It is not a user-defined value and does not need to be
-	// set.  https://jsonapi.org/format/#crud-creating
-	Type string `jsonapi:"primary,workspaces"`
-
-	// Required when execution-mode is set to agent. The ID of the agent pool
-	// belonging to the workspace's organization. This value must not be
-	// specified if execution-mode is set to remote or local or if operations is
-	// set to true.
-	AgentPoolID *string `jsonapi:"attribute" json:"agent-pool-id,omitempty"`
-
-	// Whether destroy plans can be queued on the workspace.
-	AllowDestroyPlan *bool `jsonapi:"attribute" json:"allow-destroy-plan,omitempty"`
-
-	// Whether to automatically apply changes when a Terraform plan is successful.
-	AutoApply *bool `jsonapi:"attribute" json:"auto-apply,omitempty"`
-
-	// A new name for the workspace, which can only include letters, numbers, -,
-	// and _. This will be used as an identifier and must be unique in the
-	// organization. Warning: Changing a workspace's name changes its URL in the
-	// API and UI.
-	Name *string `jsonapi:"attribute" json:"name,omitempty"`
-
-	// A description for the workspace.
-	Description *string `jsonapi:"attribute" json:"description,omitempty"`
-
-	// Which execution mode to use. Valid values are remote, local, and agent.
-	// When set to local, the workspace will be used for state storage only.
-	// This value must not be specified if operations is specified.
-	// 'agent' execution mode is not available in Terraform Enterprise.
-	ExecutionMode *string `jsonapi:"attribute" json:"execution-mode,omitempty" schema:"execution_mode"`
-
-	// Whether to filter runs based on the changed files in a VCS push. If
-	// enabled, the working directory and trigger prefixes describe a set of
-	// paths which must contain changes for a VCS push to trigger a run. If
-	// disabled, any push will trigger a run.
-	FileTriggersEnabled *bool `jsonapi:"attribute" json:"file-triggers-enabled,omitempty"`
-
-	GlobalRemoteState *bool `jsonapi:"attribute" json:"global-remote-state,omitempty"`
-
-	// DEPRECATED. Whether the workspace will use remote or local execution mode.
-	// Use ExecutionMode instead.
-	Operations *bool `jsonapi:"attribute" json:"operations,omitempty"`
-
-	// Whether to queue all runs. Unless this is set to true, runs triggered by
-	// a webhook will not be queued until at least one run is manually queued.
-	QueueAllRuns *bool `jsonapi:"attribute" json:"queue-all-runs,omitempty"`
-
-	// Whether this workspace allows speculative plans. Setting this to false
-	// prevents Terraform Cloud or the Terraform Enterprise instance from
-	// running plans on pull requests, which can improve security if the VCS
-	// repository is public or includes untrusted contributors.
-	SpeculativeEnabled *bool `jsonapi:"attribute" json:"speculative-enabled,omitempty"`
-
-	// BETA. Enable the experimental advanced run user interface.
-	// This only applies to runs using Terraform version 0.15.2 or newer,
-	// and runs executed using older versions will see the classic experience
-	// regardless of this setting.
-	StructuredRunOutputEnabled *bool `jsonapi:"attribute" json:"structured-run-output-enabled,omitempty"`
-
-	// The version of Terraform to use for this workspace.
-	TerraformVersion *string `jsonapi:"attribute" json:"terraform-version,omitempty" schema:"terraform_version"`
-
-	// List of repository-root-relative paths which list all locations to be
-	// tracked for changes. See FileTriggersEnabled above for more details.
-	TriggerPrefixes []string `jsonapi:"attribute" json:"trigger-prefixes,omitempty"`
-
-	// Optional: List of patterns used to match against changed files in order
-	// to decide whether to trigger a run or not.
-	TriggerPatterns []string `jsonapi:"attribute" json:"trigger-patterns,omitempty"`
-
-	// To delete a workspace's existing VCS repo, specify null instead of an
-	// object. To modify a workspace's existing VCS repo, include whichever of
-	// the keys below you wish to modify. To add a new VCS repo to a workspace
-	// that didn't previously have one, include at least the oauth-token-id and
-	// identifier keys.
-	VCSRepo VCSRepoOptionsJSON `jsonapi:"attribute" json:"vcs-repo,omitempty"`
-
-	// A relative path that Terraform will execute within. This defaults to the
-	// root of your repository and is typically set to a subdirectory matching
-	// the environment when multiple environments exist within the same
-	// repository.
-	WorkingDirectory *string `jsonapi:"attribute" json:"working-directory,omitempty"`
-}
-
-func (opts *WorkspaceUpdateOptions) Validate() error {
-	if opts.Operations != nil && opts.ExecutionMode != nil {
-		return errors.New("operations is deprecated and cannot be specified when execution mode is used")
-	}
-	if opts.Operations != nil {
-		if *opts.Operations {
-			opts.ExecutionMode = &remoteExecutionMode
-		} else {
-			opts.ExecutionMode = &localExecutionMode
-		}
-	}
-	return nil
 }
 
 // VCSRepoOptions is used by workspaces, policy sets, and registry modules

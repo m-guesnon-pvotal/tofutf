@@ -36,10 +36,8 @@ func (a *tfe) toRunTrigger(from *RunTrigger) *types.RunTrigger {
 		Workspace: &types.Workspace{
 			ID: from.WorkspaceID,
 		},
-		SourceableChoice: &types.SourceableChoice{
-			Workspace: &types.Workspace{
-				ID: from.SourceableID,
-			},
+		Sourceable: &types.Workspace{
+			ID: from.SourceableID,
 		},
 	}
 	return to
@@ -63,16 +61,8 @@ func (a *tfe) getRunTrigger(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = jsonapi.MarshalPayload(w, a.toRunTrigger(rt))
-	if err != nil {
-		tfeapi.Error(w, &internal.HTTPError{
-			Code:    http.StatusInternalServerError,
-			Message: err.Error(),
-		})
-		return
-	}
+	a.JsonAPIResponse(w, r, http.StatusOK, a.toRunTrigger(rt), nil)
 
-	w.WriteHeader(http.StatusOK)
 }
 
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run-triggers#list-run-triggers
@@ -93,25 +83,14 @@ func (a *tfe) listRunTriggers(w http.ResponseWriter, r *http.Request) {
 		})
 		return
 	}
-	resp := types.RunTriggerList{
-		Items:      make([]*types.RunTrigger, 0),
-		Pagination: &types.Pagination{},
-	}
+	items := make([]*types.RunTrigger, 0)
 
 	for _, rt := range rts {
-		resp.Items = append(resp.Items, a.toRunTrigger(rt))
+		items = append(items, a.toRunTrigger(rt))
 	}
 
-	err = jsonapi.MarshalPayload(w, resp)
-	if err != nil {
-		tfeapi.Error(w, &internal.HTTPError{
-			Code:    http.StatusInternalServerError,
-			Message: err.Error(),
-		})
-		return
-	}
+	a.JsonAPIResponse(w, r, http.StatusOK, items, nil)
 
-	w.WriteHeader(http.StatusOK)
 }
 
 // https://developer.hashicorp.com/terraform/cloud-docs/api-docs/run-triggers#create-a-run-trigger
@@ -140,17 +119,8 @@ func (a *tfe) addRunTrigger(w http.ResponseWriter, r *http.Request) {
 			return
 		} else {
 			resp := a.toRunTrigger(rt)
-			err = jsonapi.MarshalPayload(w, resp)
-			if err != nil {
 
-				tfeapi.Error(w, &internal.HTTPError{
-					Code:    http.StatusInternalServerError,
-					Message: err.Error(),
-				})
-				return
-			}
-
-			w.WriteHeader(http.StatusCreated)
+			a.JsonAPIResponse(w, r, http.StatusOK, resp, nil)
 			return
 		}
 
