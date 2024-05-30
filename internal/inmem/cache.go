@@ -1,9 +1,11 @@
 package inmem
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/allegro/bigcache"
+
 	"github.com/tofutf/tofutf/internal"
 )
 
@@ -25,6 +27,7 @@ func NewCache(config CacheConfig) (*bigcache.BigCache, error) {
 	if config.Size != 0 {
 		defaults.HardMaxCacheSize = config.Size / defaults.Shards
 	}
+	defaults.CleanWindow = 1 * time.Second
 
 	cache, err := bigcache.NewBigCache(defaults)
 	if err != nil {
@@ -43,6 +46,7 @@ func NewCache(config CacheConfig) (*bigcache.BigCache, error) {
 			cacheMisses.Set(float64(stats.Misses))
 			cacheDelHits.Set(float64(stats.DelHits))
 			cacheDelMisses.Set(float64(stats.DelMisses))
+			fmt.Printf("capacity: %d, entries: %d", cache.Capacity(), cache.Len())
 		}
 	}()
 

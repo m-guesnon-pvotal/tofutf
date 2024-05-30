@@ -35,15 +35,15 @@ const insertNotificationConfigurationSQL = `INSERT INTO notification_configurati
 ;`
 
 type InsertNotificationConfigurationParams struct {
-	NotificationConfigurationID pgtype.Text
-	CreatedAt                   pgtype.Timestamptz
-	UpdatedAt                   pgtype.Timestamptz
-	Name                        pgtype.Text
-	URL                         pgtype.Text
-	Triggers                    []string
-	DestinationType             pgtype.Text
-	Enabled                     pgtype.Bool
-	WorkspaceID                 pgtype.Text
+	NotificationConfigurationID pgtype.Text        `json:"notification_configuration_id"`
+	CreatedAt                   pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+	Name                        pgtype.Text        `json:"name"`
+	URL                         pgtype.Text        `json:"url"`
+	Triggers                    []string           `json:"triggers"`
+	DestinationType             pgtype.Text        `json:"destination_type"`
+	Enabled                     pgtype.Bool        `json:"enabled"`
+	WorkspaceID                 pgtype.Text        `json:"workspace_id"`
 }
 
 // InsertNotificationConfiguration implements Querier.InsertNotificationConfiguration.
@@ -298,12 +298,12 @@ RETURNING notification_configuration_id
 ;`
 
 type UpdateNotificationConfigurationByIDParams struct {
-	UpdatedAt                   pgtype.Timestamptz
-	Enabled                     pgtype.Bool
-	Name                        pgtype.Text
-	Triggers                    []string
-	URL                         pgtype.Text
-	NotificationConfigurationID pgtype.Text
+	UpdatedAt                   pgtype.Timestamptz `json:"updated_at"`
+	Enabled                     pgtype.Bool        `json:"enabled"`
+	Name                        pgtype.Text        `json:"name"`
+	Triggers                    []string           `json:"triggers"`
+	URL                         pgtype.Text        `json:"url"`
+	NotificationConfigurationID pgtype.Text        `json:"notification_configuration_id"`
 }
 
 // UpdateNotificationConfigurationByID implements Querier.UpdateNotificationConfigurationByID.

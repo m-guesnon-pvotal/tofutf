@@ -28,12 +28,12 @@ const insertStateVersionSQL = `INSERT INTO state_versions (
 );`
 
 type InsertStateVersionParams struct {
-	ID          pgtype.Text
-	CreatedAt   pgtype.Timestamptz
-	Serial      pgtype.Int4
-	State       []byte
-	Status      pgtype.Text
-	WorkspaceID pgtype.Text
+	ID          pgtype.Text        `json:"id"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Serial      pgtype.Int4        `json:"serial"`
+	State       []byte             `json:"state"`
+	Status      pgtype.Text        `json:"status"`
+	WorkspaceID pgtype.Text        `json:"workspace_id"`
 }
 
 // InsertStateVersion implements Querier.InsertStateVersion.
@@ -131,9 +131,9 @@ OFFSET $3
 ;`
 
 type FindStateVersionsByWorkspaceIDParams struct {
-	WorkspaceID pgtype.Text
-	Limit       pgtype.Int8
-	Offset      pgtype.Int8
+	WorkspaceID pgtype.Text `json:"workspace_id"`
+	Limit       pgtype.Int8 `json:"limit"`
+	Offset      pgtype.Int8 `json:"offset"`
 }
 
 type FindStateVersionsByWorkspaceIDRow struct {

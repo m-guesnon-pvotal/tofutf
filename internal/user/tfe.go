@@ -58,7 +58,10 @@ func (a *tfe) addTeamMembership(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.AddTeamMembership(r.Context(), params.TeamID, []string{params.Username}); err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		tfeapi.Error(w, &internal.HTTPError{
+			Code:    http.StatusNotFound,
+			Message: err.Error(),
+		})
 		return
 	}
 
@@ -76,7 +79,10 @@ func (a *tfe) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := a.RemoveTeamMembership(r.Context(), params.TeamID, []string{params.Username}); err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		tfeapi.Error(w, &internal.HTTPError{
+			Code:    http.StatusNotFound,
+			Message: err.Error(),
+		})
 		return
 	}
 
@@ -86,7 +92,10 @@ func (a *tfe) removeTeamMembership(w http.ResponseWriter, r *http.Request) {
 func (a *tfe) getCurrentUser(w http.ResponseWriter, r *http.Request) {
 	user, err := UserFromContext(r.Context())
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		tfeapi.Error(w, &internal.HTTPError{
+			Code:    http.StatusNotFound,
+			Message: err.Error(),
+		})
 		return
 	}
 	a.Respond(w, r, a.convertUser(user), http.StatusOK)

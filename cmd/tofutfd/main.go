@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"io"
+	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"cloud.google.com/go/profiler"
 	"github.com/pkg/errors"
 	"github.com/spf13/cobra"
 	cmdutil "github.com/tofutf/tofutf/cmd"
@@ -16,7 +18,7 @@ import (
 	"github.com/tofutf/tofutf/internal/daemon"
 	"github.com/tofutf/tofutf/internal/github"
 	"github.com/tofutf/tofutf/internal/gitlab"
-	"github.com/tofutf/tofutf/internal/logr"
+	"github.com/tofutf/tofutf/internal/xslog"
 )
 
 const (
@@ -33,9 +35,25 @@ func main() {
 		cancel()
 	}()
 
+	cfg := profiler.Config{
+		Service:        "tofutf",
+		ServiceVersion: "0.9.1",
+		// ProjectID must be set if not running on GCP.
+		// ProjectID: "my-project",
+
+		// For OpenCensus users:
+		// To see Profiler agent spans in APM backend,
+		// set EnableOCTelemetry to true
+		// EnableOCTelemetry: true,
+	}
+
+	// Profiler initialization, best done as early as possible.
+	if err := profiler.Start(cfg); err != nil {
+		cmdutil.PrintError(err)
+	}
+
 	if err := parseFlags(ctx, os.Args[1:], os.Stdout); err != nil {
 		cmdutil.PrintError(err)
-		os.Exit(1)
 	}
 }
 
@@ -43,7 +61,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cfg := daemon.Config{}
 	daemon.ApplyDefaults(&cfg)
 
-	var loggerConfig *logr.Config
+	var logger *slog.Logger
 
 	cmd := &cobra.Command{
 		Use:           "tofutfd",
@@ -53,13 +71,11 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 		SilenceErrors: true,
 		Version:       internal.Version,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			logger, err := logr.New(loggerConfig)
-			if err != nil {
-				return err
-			}
 
 			// Confer superuser privileges on all calls to service endpoints
 			ctx := internal.AddSubjectToContext(cmd.Context(), &internal.Superuser{Username: "app-user"})
+
+			slog.SetDefault(logger)
 
 			d, err := daemon.New(ctx, logger, cfg)
 			if err != nil {
@@ -81,7 +97,7 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().Int64Var(&cfg.MaxConfigSize, "max-config-size", cfg.MaxConfigSize, "Maximum permitted configuration size in bytes.")
 	cmd.Flags().StringVar(&cfg.WebhookHost, "webhook-hostname", "", "External hostname for otf webhooks")
 
-	cmd.Flags().IntVar(&cfg.CacheConfig.Size, "cache-size", 0, "Maximum cache size in MB. 0 means unlimited size.")
+	cmd.Flags().StringVar(&cfg.CacheConfig.Address, "cache-address", "localhost:6379", "Redis address")
 	cmd.Flags().DurationVar(&cfg.CacheConfig.TTL, "cache-expiry", internal.DefaultCacheTTL, "Cache entry TTL.")
 
 	cmd.Flags().BoolVar(&cfg.SSL, "ssl", false, "Toggle SSL")
@@ -114,13 +130,22 @@ func parseFlags(ctx context.Context, args []string, out io.Writer) error {
 	cmd.Flags().StringVar(&cfg.ProviderProxy.URL, "provider-proxy-url", "", "The URL of the provider registry to proxy provider registry requests to")
 	cmd.Flags().BoolVar(&cfg.ProviderProxy.IsArtifactory, "provider-proxy-is-artifactory", false, "Set to true if using artifactory as the backing provider registry")
 
-	loggerConfig = logr.NewConfigFromFlags(cmd.Flags())
+	loggerConfig := xslog.NewConfigFromFlags(cmd.Flags())
 	cfg.AgentConfig = agent.NewConfigFromFlags(cmd.Flags())
 
 	if err := cmdutil.SetFlagsFromEnvVariables(cmd.Flags()); err != nil {
 		return errors.Wrap(err, "failed to populate config from environment vars")
 	}
+	logger, err := xslog.New(loggerConfig)
+	if err != nil {
+		return err
+	}
 
 	cmd.SetArgs(args)
-	return cmd.ExecuteContext(ctx)
+	err = cmd.ExecuteContext(ctx)
+
+	if err != nil {
+		logger.Error("command exited with an error", "err", err)
+	}
+	return err
 }

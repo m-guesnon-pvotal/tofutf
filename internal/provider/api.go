@@ -2,6 +2,7 @@ package provider
 
 import (
 	"encoding/json"
+	"github.com/tofutf/tofutf/internal/api"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -37,7 +38,7 @@ func (h *apiHandlers) listAvailableVersions(w http.ResponseWriter, r *http.Reque
 		Namespace string `schema:"namespace,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		api.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -46,14 +47,14 @@ func (h *apiHandlers) listAvailableVersions(w http.ResponseWriter, r *http.Reque
 		Namespace: params.Namespace,
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		api.HandleError(w, err, http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(versions); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		api.HandleError(w, err, http.StatusInternalServerError)
 	}
 }
 
@@ -69,7 +70,7 @@ func (h *apiHandlers) findProviderPackage(w http.ResponseWriter, r *http.Request
 		Arch      string `schema:"arch"`
 	}
 	if err := decode.Route(&params, r); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		api.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -81,13 +82,13 @@ func (h *apiHandlers) findProviderPackage(w http.ResponseWriter, r *http.Request
 		Arch:      params.Arch,
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		api.HandleError(w, err, http.StatusNotFound)
 		return
 	}
 
 	w.Header().Set("Content-type", "application/json")
 
 	if err := json.NewEncoder(w).Encode(pkg); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		api.HandleError(w, err, http.StatusInternalServerError)
 	}
 }

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"reflect"
@@ -45,7 +46,7 @@ type (
 	}
 )
 
-func NewClient(config Config) (*Client, error) {
+func NewClient(config Config, logger *slog.Logger) (*Client, error) {
 	// set defaults
 	if config.Address == "" {
 		config.Address = DefaultAddress
@@ -89,11 +90,21 @@ func NewClient(config Config) (*Client, error) {
 		Backoff:        retryablehttp.DefaultBackoff,
 		ErrorHandler:   retryablehttp.PassthroughErrorHandler,
 		RequestLogHook: config.RetryLogHook,
-		HTTPClient:     &http.Client{Transport: config.Transport},
-		RetryWaitMin:   100 * time.Millisecond,
-		RetryWaitMax:   400 * time.Millisecond,
-		RetryMax:       30,
+		HTTPClient: &http.Client{
+			Transport: config.Transport,
+		},
+		RetryWaitMin: 100 * time.Millisecond,
+		RetryWaitMax: 400 * time.Millisecond,
+		RetryMax:     30,
 	}
+	// If logger is passed, then enable request logging
+	if logger != nil {
+		client.http.HTTPClient.Transport = LoggingRoundTripper{
+			logger:              logger,
+			defaultRoundTripper: client.http.HTTPClient.Transport,
+		}
+	}
+
 	if config.RetryRequests {
 		// enable retries
 		client.http.CheckRetry = retryablehttp.DefaultRetryPolicy

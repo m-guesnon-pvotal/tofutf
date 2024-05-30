@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	tfetypes "github.com/hashicorp/go-tfe"
 	"github.com/tofutf/tofutf/internal"
 	otfhttp "github.com/tofutf/tofutf/internal/http"
 	"github.com/tofutf/tofutf/internal/http/decode"
@@ -35,6 +36,7 @@ func (a *tfe) addHandlers(r *mux.Router) {
 	r.HandleFunc("/runs", a.listRuns).Methods("GET")
 	r.HandleFunc("/workspaces/{workspace_id}/runs", a.listRuns).Methods("GET")
 	r.HandleFunc("/runs/{id}", a.getRun).Methods("GET")
+	r.HandleFunc("/runs/{id}/task-stages", a.getTaskStages).Methods("GET")
 	r.HandleFunc("/runs/{id}/actions/discard", a.discardRun).Methods("POST")
 	r.HandleFunc("/runs/{id}/actions/cancel", a.cancelRun).Methods("POST")
 	r.HandleFunc("/runs/{id}/actions/force-cancel", a.forceCancelRun).Methods("POST")
@@ -118,6 +120,7 @@ func (a *tfe) getRun(w http.ResponseWriter, r *http.Request) {
 		tfeapi.Error(w, err)
 		return
 	}
+
 	a.Respond(w, r, converted, http.StatusOK)
 }
 
@@ -155,6 +158,9 @@ func (a *tfe) getRunQueue(w http.ResponseWriter, r *http.Request) {
 	a.listRunsWithOptions(w, r, ListOptions{
 		Statuses: []Status{RunPlanQueued, RunApplyQueued},
 	})
+}
+func (a *tfe) getTaskStages(w http.ResponseWriter, r *http.Request) {
+	a.RespondWithPage(w, r, []*tfetypes.TaskStage{}, &resource.Pagination{})
 }
 
 func (a *tfe) listRunsWithOptions(w http.ResponseWriter, r *http.Request, opts ListOptions) {
@@ -280,7 +286,11 @@ func (a *tfe) getPlanJSON(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if _, err := w.Write(json); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		tfeapi.Error(w, &internal.HTTPError{
+			Code:    http.StatusInternalServerError,
+			Message: err.Error(),
+		})
+
 		return
 	}
 }
@@ -422,15 +432,15 @@ func (a *tfe) toRun(from *Run, ctx context.Context) (*types.Run, error) {
 		// Relations
 		Plan:  &types.Plan{ID: internal.ConvertID(from.ID, "plan")},
 		Apply: &types.Apply{ID: internal.ConvertID(from.ID, "apply")},
-		// TODO: populate with real user.
-		CreatedBy: &types.User{
-			ID:       "user-123",
-			Username: "otf",
-		},
 		ConfigurationVersion: &types.ConfigurationVersion{
 			ID: from.ConfigurationVersionID,
 		},
 		Workspace: &types.Workspace{ID: from.WorkspaceID},
+	}
+	if from.CreatedBy != nil {
+		to.CreatedBy = &types.User{
+			ID: *from.CreatedBy, // FIXME
+		}
 	}
 	to.Variables = make([]types.RunVariable, len(from.Variables))
 	for i, from := range from.Variables {

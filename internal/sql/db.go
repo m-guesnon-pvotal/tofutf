@@ -3,14 +3,15 @@ package sql
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net/url"
 	"strconv"
 	"strings"
 
-	"github.com/go-logr/logr"
-	"github.com/jackc/pgconn"
 	"github.com/jackc/pgx/v4"
 	"github.com/jackc/pgx/v4/pgxpool"
+
+	"github.com/jackc/pgconn"
 	"github.com/tofutf/tofutf/internal/sql/pggen"
 )
 
@@ -24,23 +25,39 @@ type (
 	// SQL
 	DB struct {
 		*pgxpool.Pool // db connection pool
-		logr.Logger
+		Logger        *slog.Logger
 	}
 
 	// Options for constructing a DB
 	Options struct {
-		Logger     logr.Logger
+		Logger     *slog.Logger
 		ConnString string
 	}
 
 	genericConnection interface {
-		BeginFunc(ctx context.Context, f func(pgx.Tx) error) error
+		BeginFunc(ctx context.Context, f func(tx pgx.Tx) error) error
 		Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
 		Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
 		QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
 		SendBatch(ctx context.Context, b *pgx.Batch) pgx.BatchResults
 	}
 )
+
+type dbLogger struct {
+	srcLogger *slog.Logger
+}
+
+func (dbl *dbLogger) Log(ctx context.Context, level pgx.LogLevel, msg string, data map[string]interface{}) {
+	if dbl.srcLogger.Enabled(ctx, slog.LevelDebug) {
+		args := make([]any, 0)
+		for k, v := range data {
+			args = append(args, k)
+			args = append(args, v)
+		}
+		dbl.srcLogger.DebugContext(ctx, msg, args...)
+
+	}
+}
 
 // New constructs a new DB connection pool, and migrates the schema to the
 // latest version.
@@ -53,7 +70,16 @@ func New(ctx context.Context, opts Options) (*DB, error) {
 		return nil, err
 	}
 
-	pool, err := pgxpool.Connect(ctx, connString)
+	config, err := pgxpool.ParseConfig(connString)
+	if err != nil {
+		return nil, err
+	}
+
+	config.ConnConfig.Logger = &dbLogger{
+		srcLogger: opts.Logger,
+	}
+
+	pool, err := pgxpool.ConnectConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
@@ -133,7 +159,7 @@ func (db *DB) WaitAndLock(ctx context.Context, id int64, fn func(context.Context
 		defer func() {
 			_, closeErr := conn.Exec(ctx, "SELECT pg_advisory_unlock($1)", id)
 			if err != nil {
-				db.Error(err, "unlocking session-level advisory lock")
+				db.Logger.Error("unlocking session-level advisory lock", "err", err)
 				return
 			}
 			err = closeErr

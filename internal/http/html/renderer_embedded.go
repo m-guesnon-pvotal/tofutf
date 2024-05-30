@@ -3,6 +3,7 @@ package html
 import (
 	"html/template"
 	"io"
+	"log/slog"
 	"net/http"
 )
 
@@ -32,5 +33,6 @@ func (r *embeddedRenderer) RenderTemplate(name string, w io.Writer, data any) er
 }
 
 func (r *embeddedRenderer) Error(w http.ResponseWriter, err string, code int) {
+	slog.Default().Error("failed to render page", "err", err)
 	Error(w, err, code, false)
 }

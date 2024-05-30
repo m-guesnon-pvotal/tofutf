@@ -26,11 +26,11 @@ const insertVariableSetSQL = `INSERT INTO variable_sets (
 );`
 
 type InsertVariableSetParams struct {
-	VariableSetID    pgtype.Text
-	Global           pgtype.Bool
-	Name             pgtype.Text
-	Description      pgtype.Text
-	OrganizationName pgtype.Text
+	VariableSetID    pgtype.Text `json:"variable_set_id"`
+	Global           pgtype.Bool `json:"global"`
+	Name             pgtype.Text `json:"name"`
+	Description      pgtype.Text `json:"description"`
+	OrganizationName pgtype.Text `json:"organization_name"`
 }
 
 // InsertVariableSet implements Querier.InsertVariableSet.
@@ -443,10 +443,10 @@ WHERE variable_set_id = $4
 RETURNING variable_set_id;`
 
 type UpdateVariableSetByIDParams struct {
-	Global        pgtype.Bool
-	Name          pgtype.Text
-	Description   pgtype.Text
-	VariableSetID pgtype.Text
+	Global        pgtype.Bool `json:"global"`
+	Name          pgtype.Text `json:"name"`
+	Description   pgtype.Text `json:"description"`
+	VariableSetID pgtype.Text `json:"variable_set_id"`
 }
 
 // UpdateVariableSetByID implements Querier.UpdateVariableSetByID.

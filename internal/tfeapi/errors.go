@@ -1,8 +1,13 @@
 package tfeapi
 
 import (
+	"context"
 	"errors"
+	"fmt"
+	"log/slog"
 	"net/http"
+	"runtime"
+	"time"
 
 	"github.com/DataDog/jsonapi"
 	"github.com/tofutf/tofutf/internal"
@@ -17,8 +22,10 @@ var codes = map[error]int{
 }
 
 func lookupHTTPCode(err error) int {
-	if v, ok := codes[err]; ok {
-		return v
+	for errType, code := range codes {
+		if errors.Is(err, errType) {
+			return code
+		}
 	}
 	return http.StatusInternalServerError
 }
@@ -39,14 +46,18 @@ func Error(w http.ResponseWriter, err error) {
 	} else {
 		code = lookupHTTPCode(err)
 	}
-	b, err := jsonapi.Marshal(&jsonapi.Error{
+	b, marshalErr := jsonapi.Marshal(&jsonapi.Error{
 		Status: &code,
 		Title:  http.StatusText(code),
 		Detail: err.Error(),
 	})
-	if err != nil {
-		panic(err)
+	if marshalErr != nil {
+		panic(marshalErr)
 	}
+	var pcs [1]uintptr
+	runtime.Callers(2, pcs[:]) // skip [Callers, Infof]
+	r := slog.NewRecord(time.Now(), slog.LevelError, fmt.Sprintf("failed to handle tfeapi request: %s", err.Error()), pcs[0])
+	_ = slog.Default().Handler().Handle(context.Background(), r)
 	w.Header().Set("Content-type", mediaType)
 	w.WriteHeader(code)
 	w.Write(b) //nolint:errcheck

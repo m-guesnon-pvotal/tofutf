@@ -183,8 +183,13 @@ func newRun(ctx context.Context, org *organization.Organization, cv *configversi
 		run.AllowEmptyApply = *opts.AllowEmptyApply
 	}
 	if user, _ := user.UserFromContext(ctx); user != nil {
-		run.CreatedBy = &user.Username
+		run.CreatedBy = &user.ID
+	} else if subj, _ := internal.SubjectFromContext(ctx); subj != nil {
+		// If not initiated by user, we get the subject as runner. Most likely an agent.
+		agentName := subj.String()
+		run.CreatedBy = &agentName
 	}
+
 	if opts.IsDestroy != nil {
 		run.IsDestroy = *opts.IsDestroy
 	}

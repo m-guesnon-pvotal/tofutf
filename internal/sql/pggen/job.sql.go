@@ -22,9 +22,9 @@ const insertJobSQL = `INSERT INTO jobs (
 );`
 
 type InsertJobParams struct {
-	RunID  pgtype.Text
-	Phase  pgtype.Text
-	Status pgtype.Text
+	RunID  pgtype.Text `json:"run_id"`
+	Phase  pgtype.Text `json:"phase"`
+	Status pgtype.Text `json:"status"`
 }
 
 // InsertJob implements Querier.InsertJob.
@@ -392,11 +392,11 @@ AND   phase = $5
 RETURNING *;`
 
 type UpdateJobParams struct {
-	Status   pgtype.Text
-	Signaled pgtype.Bool
-	AgentID  pgtype.Text
-	RunID    pgtype.Text
-	Phase    pgtype.Text
+	Status   pgtype.Text `json:"status"`
+	Signaled pgtype.Bool `json:"signaled"`
+	AgentID  pgtype.Text `json:"agent_id"`
+	RunID    pgtype.Text `json:"run_id"`
+	Phase    pgtype.Text `json:"phase"`
 }
 
 type UpdateJobRow struct {

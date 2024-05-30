@@ -2,6 +2,7 @@ package workspace
 
 import (
 	"errors"
+	tfetypes "github.com/hashicorp/go-tfe"
 	"net/http"
 
 	"github.com/gorilla/mux"
@@ -125,7 +126,7 @@ func (a *tfe) alterWorkspaceTags(w http.ResponseWriter, r *http.Request, op tagO
 		return
 	}
 	// convert from json:api structs to tag specs
-	specs := toTagSpecs(params)
+	specs := toTagSpecsInternal(params)
 
 	switch op {
 	case addTags:
@@ -180,7 +181,17 @@ func (a *tfe) toTag(from *Tag) *types.OrganizationTag {
 	}
 }
 
-func toTagSpecs(from []*types.Tag) (to []TagSpec) {
+func toTagSpecsInternal(from []*types.Tag) (to []TagSpec) {
+	for _, tag := range from {
+		to = append(to, TagSpec{
+			ID:   tag.ID,
+			Name: tag.Name,
+		})
+	}
+	return
+}
+
+func toTagSpecs(from []*tfetypes.Tag) (to []TagSpec) {
 	for _, tag := range from {
 		to = append(to, TagSpec{
 			ID:   tag.ID,

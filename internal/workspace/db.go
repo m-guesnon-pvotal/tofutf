@@ -3,8 +3,9 @@ package workspace
 import (
 	"context"
 
-	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
+
+	"github.com/jackc/pgtype"
 	"github.com/tofutf/tofutf/internal"
 	"github.com/tofutf/tofutf/internal/resource"
 	"github.com/tofutf/tofutf/internal/sql"
@@ -157,6 +158,9 @@ func (db *pgdb) create(ctx context.Context, ws *Workspace) error {
 		params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
 	}
 	_, err := q.InsertWorkspace(ctx, params)
+	if err != nil {
+		db.Logger.Error("failed to set create workspace", "err", err)
+	}
 	return sql.Error(err)
 }
 
@@ -167,14 +171,17 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 		// retrieve workspace
 		result, err := q.FindWorkspaceByIDForUpdate(ctx, sql.String(workspaceID))
 		if err != nil {
+			db.Logger.Error("failed to set update workspace", "err", err)
 			return sql.Error(err)
 		}
 		ws, err = pgresult(result).toWorkspace()
 		if err != nil {
+			db.Logger.Error("failed to set update workspace", "err", err)
 			return err
 		}
 		// update workspace
 		if err := fn(ws); err != nil {
+			db.Logger.Error("failed to set update workspace", "err", err)
 			return err
 		}
 		// persist update
@@ -205,6 +212,9 @@ func (db *pgdb) update(ctx context.Context, workspaceID string, fn func(*Workspa
 			params.VCSTagsRegex = sql.String(ws.Connection.TagsRegex)
 		}
 		_, err = q.UpdateWorkspaceByID(ctx, params)
+		if err != nil {
+			db.Logger.Error("failed to set update workspace", "err", err)
+		}
 		return err
 	})
 	return ws, err
@@ -215,6 +225,7 @@ func (db *pgdb) setCurrentRun(ctx context.Context, workspaceID, runID string) (*
 	q := db.Conn(ctx)
 	_, err := q.UpdateWorkspaceLatestRun(ctx, sql.String(runID), sql.String(workspaceID))
 	if err != nil {
+		db.Logger.Error("failed to set current workspace run", "err", err)
 		return nil, sql.Error(err)
 	}
 	return db.get(ctx, workspaceID)
@@ -252,10 +263,12 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 
 	rows, err := q.FindWorkspacesScan(results)
 	if err != nil {
+		db.Logger.Error("failed to list workspaces", "err", err)
 		return nil, err
 	}
 	count, err := q.CountWorkspacesScan(results)
 	if err != nil {
+		db.Logger.Error("failed to list workspaces", "err", err)
 		return nil, err
 	}
 
@@ -263,6 +276,7 @@ func (db *pgdb) list(ctx context.Context, opts ListOptions) (*resource.Page[*Wor
 	for i, r := range rows {
 		ws, err := pgresult(r).toWorkspace()
 		if err != nil {
+			db.Logger.Error("failed to list workspaces", "err", err)
 			return nil, err
 		}
 		items[i] = ws
@@ -274,6 +288,7 @@ func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID, repoPath st
 	q := db.Conn(ctx)
 	rows, err := q.FindWorkspacesByConnection(ctx, sql.String(vcsProviderID), sql.String(repoPath))
 	if err != nil {
+		db.Logger.Error("failed to list workspaces by connection", "err", err)
 		return nil, err
 	}
 
@@ -281,6 +296,7 @@ func (db *pgdb) listByConnection(ctx context.Context, vcsProviderID, repoPath st
 	for i, r := range rows {
 		ws, err := pgresult(r).toWorkspace()
 		if err != nil {
+			db.Logger.Error("failed to list workspaces by connection", "err", err)
 			return nil, err
 		}
 		items[i] = ws
@@ -304,10 +320,12 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 
 	rows, err := q.FindWorkspacesByUsernameScan(results)
 	if err != nil {
+		db.Logger.Error("failed to list workspaces by username", "err", err)
 		return nil, err
 	}
 	count, err := q.CountWorkspacesByUsernameScan(results)
 	if err != nil {
+		db.Logger.Error("failed to list workspaces by username", "err", err)
 		return nil, err
 	}
 
@@ -315,6 +333,7 @@ func (db *pgdb) listByUsername(ctx context.Context, username string, organizatio
 	for i, r := range rows {
 		ws, err := pgresult(r).toWorkspace()
 		if err != nil {
+			db.Logger.Error("failed to list workspaces by username", "err", err)
 			return nil, err
 		}
 		items[i] = ws
@@ -327,6 +346,7 @@ func (db *pgdb) get(ctx context.Context, workspaceID string) (*Workspace, error)
 	q := db.Conn(ctx)
 	result, err := q.FindWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
+		db.Logger.Error("failed to get workspace by ID", "err", err)
 		return nil, sql.Error(err)
 	}
 	return pgresult(result).toWorkspace()
@@ -336,6 +356,7 @@ func (db *pgdb) getByName(ctx context.Context, organization, workspace string) (
 	q := db.Conn(ctx)
 	result, err := q.FindWorkspaceByName(ctx, sql.String(workspace), sql.String(organization))
 	if err != nil {
+		db.Logger.Error("failed to get workspace by name", "err", err)
 		return nil, sql.Error(err)
 	}
 	return pgresult(result).toWorkspace()
@@ -345,6 +366,7 @@ func (db *pgdb) delete(ctx context.Context, workspaceID string) error {
 	q := db.Conn(ctx)
 	_, err := q.DeleteWorkspaceByID(ctx, sql.String(workspaceID))
 	if err != nil {
+		db.Logger.Error("failed to delete workspace", "err", err)
 		return sql.Error(err)
 	}
 	return nil

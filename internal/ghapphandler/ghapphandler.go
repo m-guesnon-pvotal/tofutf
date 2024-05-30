@@ -3,18 +3,19 @@ package ghapphandler
 
 import (
 	"errors"
+	"github.com/tofutf/tofutf/internal/api"
+	"log/slog"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/tofutf/tofutf/internal"
 	"github.com/tofutf/tofutf/internal/github"
-	"github.com/tofutf/tofutf/internal/logr"
 	"github.com/tofutf/tofutf/internal/vcs"
 	"github.com/tofutf/tofutf/internal/vcsprovider"
 )
 
 type Handler struct {
-	logr.Logger
+	Logger *slog.Logger
 	vcs.Publisher
 
 	VCSProviders *vcsprovider.Service
@@ -32,29 +33,29 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// 400
 	app, err := h.GithubApps.GetApp(ctx)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		api.HandleError(w, err, http.StatusBadRequest)
 		return
 	}
-	h.V(2).Info("received vcs event", "github_app", app)
+	h.Logger.Debug("received vcs event", "github_app", app)
 
 	// use github-specific handler to unmarshal event
 	payload, err := github.HandleEvent(r, app.WebhookSecret)
 	// either ignore the event, return an error, or publish the event onwards
 	var ignore vcs.ErrIgnoreEvent
 	if errors.As(err, &ignore) {
-		h.V(2).Info("ignoring event: "+err.Error(), "github_app", app)
+		h.Logger.Info("ignoring event: "+err.Error(), "github_app", app)
 		w.WriteHeader(http.StatusOK)
 		return
 	} else if err != nil {
-		h.Error(err, "handling vcs event", "github_app", app)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.Logger.Error("handling vcs event", "github_app", app, "err", err)
+		api.HandleError(w, err, http.StatusBadRequest)
 		return
 	}
 	// relay a copy of the event for each vcs provider configured with the
 	// github app install that triggered the event.
 	providers, err := h.VCSProviders.ListVCSProvidersByGithubAppInstall(ctx, *payload.GithubAppInstallID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		api.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 	for _, prov := range providers {

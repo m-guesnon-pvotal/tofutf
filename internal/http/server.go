@@ -1,9 +1,12 @@
 package http
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"time"
@@ -13,7 +16,6 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	"github.com/go-logr/logr"
 	"github.com/tofutf/tofutf/internal"
 	"github.com/tofutf/tofutf/internal/http/html"
 	"github.com/tofutf/tofutf/internal/json"
@@ -53,9 +55,9 @@ type (
 
 	// Server is the http server for OTF
 	Server struct {
-		logr.Logger
 		ServerConfig
 
+		logger *slog.Logger
 		server *http.Server
 	}
 
@@ -64,7 +66,7 @@ type (
 )
 
 // NewServer constructs the http server for OTF
-func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
+func NewServer(logger *slog.Logger, cfg ServerConfig) (*Server, error) {
 	if cfg.SSL {
 		if cfg.CertFile == "" || cfg.KeyFile == "" {
 			return nil, fmt.Errorf("must provide both --cert-file and --key-file")
@@ -119,18 +121,40 @@ func NewServer(logger logr.Logger, cfg ServerConfig) (*Server, error) {
 	if cfg.EnableRequestLogging {
 		r.Use(func(next http.Handler) http.Handler {
 			return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+				var body string
+				if logger.Enabled(r.Context(), slog.LevelDebug) {
+					if r.Body != nil {
+						buf, err := io.ReadAll(r.Body)
+						if err != nil {
+							logger.Error("failed to read request body", "err", err)
+						} else {
+							body = string(buf)
+							r.Body = io.NopCloser(bytes.NewBuffer(buf))
+						}
+					}
+				}
 				m := httpsnoop.CaptureMetrics(next, w, r)
-				logger.Info("request",
-					"duration", fmt.Sprintf("%dms", m.Duration.Milliseconds()),
-					"status", m.Code,
-					"method", r.Method,
-					"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
+
+				if body != "" {
+					logger.Info("request",
+						"duration", fmt.Sprintf("%dms", m.Duration.Milliseconds()),
+						"status", m.Code,
+						"method", r.Method,
+						"payload", body,
+						"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
+				} else {
+					logger.Info("request",
+						"duration", fmt.Sprintf("%dms", m.Duration.Milliseconds()),
+						"status", m.Code,
+						"method", r.Method,
+						"path", fmt.Sprintf("%s?%s", r.URL.Path, r.URL.RawQuery))
+				}
 			})
 		})
 	}
 
 	return &Server{
-		Logger:       logger,
+		logger:       logger,
 		ServerConfig: cfg,
 		server:       &http.Server{Handler: r},
 	}, nil
@@ -149,17 +173,18 @@ func (s *Server) Start(ctx context.Context, ln net.Listener) (err error) {
 		}
 	}()
 
-	s.Info("started server", "address", ln.Addr().String(), "ssl", s.SSL)
+	s.logger.Info("started server", "address", ln.Addr().String(), "ssl", s.SSL)
 
 	// Block until server stops listening or context is cancelled.
 	select {
 	case err := <-errch:
-		if err == http.ErrServerClosed {
+		s.logger.Error("exiting server with error...", "err", err)
+		if errors.Is(err, http.ErrServerClosed) {
 			return nil
 		}
 		return err
 	case <-ctx.Done():
-		s.Info("gracefully shutting down server...")
+		s.logger.Info("gracefully shutting down server...")
 
 		ctx, cancel := context.WithTimeout(context.Background(), shutdownTimeout)
 		defer cancel()

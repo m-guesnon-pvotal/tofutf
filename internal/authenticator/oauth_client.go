@@ -5,6 +5,7 @@ import (
 	"crypto/tls"
 	"errors"
 	"fmt"
+	"github.com/tofutf/tofutf/internal/api"
 	"net/http"
 	"net/url"
 
@@ -101,7 +102,7 @@ func (a *OAuthClient) String() string { return a.Name }
 func (a *OAuthClient) requestHandler(w http.ResponseWriter, r *http.Request) {
 	state, err := internal.GenerateToken()
 	if err != nil {
-		http.Error(w, "unable to generate state token: "+err.Error(), http.StatusInternalServerError)
+		api.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 	http.SetCookie(w, &http.Cookie{

@@ -1,6 +1,7 @@
 package internal
 
 import (
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -33,6 +34,7 @@ func VerifySignedURL(v Verifier) mux.MiddlewareFunc {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if err := v.Verify(r.URL.String()); err != nil {
+				slog.Default().Error("failed to verify signed URL", "err", err)
 				http.Error(w, err.Error(), http.StatusUnauthorized)
 				return
 			}

@@ -3,11 +3,12 @@ package daemon
 import (
 	"errors"
 
+	"github.com/tofutf/tofutf/internal/redis"
+
 	"github.com/tofutf/tofutf/internal"
 	"github.com/tofutf/tofutf/internal/agent"
 	"github.com/tofutf/tofutf/internal/authenticator"
 	"github.com/tofutf/tofutf/internal/configversion"
-	"github.com/tofutf/tofutf/internal/inmem"
 	"github.com/tofutf/tofutf/internal/tokens"
 )
 
@@ -17,7 +18,7 @@ var ErrInvalidSecretLength = errors.New("secret must be 16 bytes in size")
 // the flag definitions in ./cmd/otfd
 type Config struct {
 	AgentConfig *agent.Config
-	CacheConfig *inmem.CacheConfig
+	CacheConfig *redis.CacheConfig
 
 	GithubHostname     string
 	GithubClientID     string
@@ -64,7 +65,7 @@ func ApplyDefaults(cfg *Config) {
 		}
 	}
 	if cfg.CacheConfig == nil {
-		cfg.CacheConfig = &inmem.CacheConfig{}
+		cfg.CacheConfig = &redis.CacheConfig{}
 	}
 	if cfg.MaxConfigSize == 0 {
 		cfg.MaxConfigSize = configversion.DefaultConfigMaxSize

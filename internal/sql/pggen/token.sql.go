@@ -24,10 +24,10 @@ const insertTokenSQL = `INSERT INTO tokens (
 );`
 
 type InsertTokenParams struct {
-	TokenID     pgtype.Text
-	CreatedAt   pgtype.Timestamptz
-	Description pgtype.Text
-	Username    pgtype.Text
+	TokenID     pgtype.Text        `json:"token_id"`
+	CreatedAt   pgtype.Timestamptz `json:"created_at"`
+	Description pgtype.Text        `json:"description"`
+	Username    pgtype.Text        `json:"username"`
 }
 
 // InsertToken implements Querier.InsertToken.

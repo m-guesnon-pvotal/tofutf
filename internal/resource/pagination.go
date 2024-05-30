@@ -3,6 +3,7 @@ package resource
 import (
 	"math"
 
+	tfetypes "github.com/hashicorp/go-tfe"
 	"github.com/jackc/pgtype"
 	"github.com/tofutf/tofutf/internal"
 	"github.com/tofutf/tofutf/internal/sql"
@@ -139,4 +140,24 @@ func (o PageOptions) normalize() PageOptions {
 		o.PageSize = MaxPageSize
 	}
 	return o
+}
+
+func (p *Pagination) AsTFEPagination() *tfetypes.Pagination {
+	res := &tfetypes.Pagination{
+		CurrentPage: p.CurrentPage,
+		TotalCount:  p.TotalCount,
+		TotalPages:  p.TotalPages,
+	}
+	if p.NextPage != nil {
+		res.NextPage = *p.NextPage
+	} else {
+		res.NextPage = 1
+	}
+	if p.PreviousPage != nil {
+		res.PreviousPage = *p.PreviousPage
+	} else {
+		res.PreviousPage = 1
+	}
+
+	return res
 }

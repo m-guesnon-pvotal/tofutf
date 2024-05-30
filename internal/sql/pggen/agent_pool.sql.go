@@ -26,11 +26,11 @@ const insertAgentPoolSQL = `INSERT INTO agent_pools (
 );`
 
 type InsertAgentPoolParams struct {
-	AgentPoolID        pgtype.Text
-	Name               pgtype.Text
-	CreatedAt          pgtype.Timestamptz
-	OrganizationName   pgtype.Text
-	OrganizationScoped pgtype.Bool
+	AgentPoolID        pgtype.Text        `json:"agent_pool_id"`
+	Name               pgtype.Text        `json:"name"`
+	CreatedAt          pgtype.Timestamptz `json:"created_at"`
+	OrganizationName   pgtype.Text        `json:"organization_name"`
+	OrganizationScoped pgtype.Bool        `json:"organization_scoped"`
 }
 
 // InsertAgentPool implements Querier.InsertAgentPool.
@@ -158,10 +158,10 @@ ORDER BY ap.created_at DESC
 ;`
 
 type FindAgentPoolsByOrganizationParams struct {
-	OrganizationName     pgtype.Text
-	NameSubstring        pgtype.Text
-	AllowedWorkspaceName pgtype.Text
-	AllowedWorkspaceID   pgtype.Text
+	OrganizationName     pgtype.Text `json:"organization_name"`
+	NameSubstring        pgtype.Text `json:"name_substring"`
+	AllowedWorkspaceName pgtype.Text `json:"allowed_workspace_name"`
+	AllowedWorkspaceID   pgtype.Text `json:"allowed_workspace_id"`
 }
 
 type FindAgentPoolsByOrganizationRow struct {
@@ -334,9 +334,9 @@ WHERE agent_pool_id = $3
 RETURNING *;`
 
 type UpdateAgentPoolParams struct {
-	Name               pgtype.Text
-	OrganizationScoped pgtype.Bool
-	PoolID             pgtype.Text
+	Name               pgtype.Text `json:"name"`
+	OrganizationScoped pgtype.Bool `json:"organization_scoped"`
+	PoolID             pgtype.Text `json:"pool_id"`
 }
 
 type UpdateAgentPoolRow struct {

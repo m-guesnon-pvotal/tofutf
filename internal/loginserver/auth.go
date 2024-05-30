@@ -2,6 +2,7 @@ package loginserver
 
 import (
 	"encoding/json"
+	"github.com/tofutf/tofutf/internal/api"
 	"net/http"
 	"net/url"
 
@@ -23,7 +24,7 @@ func (s *server) authHandler(w http.ResponseWriter, r *http.Request) {
 		Consented bool `schema:"consented"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		api.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 

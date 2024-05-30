@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 
-	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/leg100/surl"
 	"github.com/tofutf/tofutf/internal"
@@ -32,8 +32,6 @@ type (
 	VCSProviderService          vcsprovider.Service
 
 	Service struct {
-		logr.Logger
-
 		site                internal.Authorizer
 		organization        internal.Authorizer
 		workspaceAuthorizer internal.Authorizer
@@ -41,16 +39,18 @@ type (
 
 		workspaces *workspace.Service
 
-		cache                  internal.Cache
-		db                     *pgdb
-		tfeapi                 *tfe
-		api                    *api
-		web                    *webHandlers
-		afterCancelHooks       []func(context.Context, *Run) error
-		afterForceCancelHooks  []func(context.Context, *Run) error
-		afterEnqueuePlanHooks  []func(context.Context, *Run) error
-		afterEnqueueApplyHooks []func(context.Context, *Run) error
-		broker                 pubsub.SubscriptionService[*Run]
+		logger                    *slog.Logger
+		cache                     internal.Cache
+		db                        *pgdb
+		tfeapi                    *tfe
+		api                       *api
+		web                       *webHandlers
+		afterCancelHooks          []func(context.Context, *Run) error
+		afterForceCancelHooks     []func(context.Context, *Run) error
+		afterEnqueuePlanHooks     []func(context.Context, *Run) error
+		afterEnqueueApplyHooks    []func(context.Context, *Run) error
+		afterSuccessfulApplyHooks []func(context.Context, *Run) error
+		broker                    pubsub.SubscriptionService[*Run]
 
 		*factory
 	}
@@ -65,8 +65,8 @@ type (
 		ReleasesService      *releases.Service
 		VCSProviderService   *vcsprovider.Service
 		TokensService        *tokens.Service
+		Logger               *slog.Logger
 
-		logr.Logger
 		internal.Cache
 		*sql.DB
 		*tfeapi.Responder
@@ -79,7 +79,7 @@ type (
 func NewService(opts Options) *Service {
 	db := &pgdb{opts.DB}
 	svc := Service{
-		Logger:              opts.Logger,
+		logger:              opts.Logger,
 		workspaces:          opts.WorkspaceService,
 		db:                  db,
 		cache:               opts.Cache,
@@ -110,10 +110,10 @@ func NewService(opts Options) *Service {
 	svc.api = &api{
 		Service:   &svc,
 		Responder: opts.Responder,
-		Logger:    opts.Logger,
+		logger:    opts.Logger,
 	}
 	spawner := &Spawner{
-		Logger:     opts.Logger.WithValues("component", "spawner"),
+		logger:     opts.Logger.With("component", "spawner"),
 		configs:    opts.ConfigVersionService,
 		workspaces: opts.WorkspaceService,
 		vcs:        opts.VCSProviderService,
@@ -159,15 +159,15 @@ func (s *Service) Create(ctx context.Context, workspaceID string, opts CreateOpt
 
 	run, err := s.NewRun(ctx, workspaceID, opts)
 	if err != nil {
-		s.Error(err, "constructing new run", "subject", subject)
+		s.logger.Error("constructing new run", "subject", subject, "err", err)
 		return nil, err
 	}
 
 	if err = s.db.CreateRun(ctx, run); err != nil {
-		s.Error(err, "creating run", "id", run.ID, "workspace_id", run.WorkspaceID, "subject", subject)
+		s.logger.Error("creating run", "id", run.ID, "workspace_id", run.WorkspaceID, "subject", subject, "err", err)
 		return nil, err
 	}
-	s.V(1).Info("created run", "id", run.ID, "workspace_id", run.WorkspaceID, "subject", subject)
+	s.logger.Info("created run", "id", run.ID, "workspace_id", run.WorkspaceID, "subject", subject)
 
 	return run, nil
 }
@@ -181,10 +181,10 @@ func (s *Service) Get(ctx context.Context, runID string) (*Run, error) {
 
 	run, err := s.db.GetRun(ctx, runID)
 	if err != nil {
-		s.Error(err, "retrieving run", "id", runID, "subject", subject)
+		s.logger.Error("retrieving run", "id", runID, "subject", subject, "err", err)
 		return nil, err
 	}
-	s.V(9).Info("retrieved run", "id", runID, "subject", subject)
+	s.logger.Debug("retrieved run", "id", runID, "subject", subject)
 
 	return run, nil
 }
@@ -219,11 +219,11 @@ func (s *Service) List(ctx context.Context, opts ListOptions) (*resource.Page[*R
 
 	page, err := s.db.ListRuns(ctx, opts)
 	if err != nil {
-		s.Error(err, "listing runs", "subject", subject)
+		s.logger.Error("listing runs", "subject", subject, "err", err)
 		return nil, err
 	}
 
-	s.V(9).Info("listed runs", "count", len(page.Items), "subject", subject)
+	s.logger.Debug("listed runs", "count", len(page.Items), "subject", subject)
 
 	return page, nil
 }
@@ -241,10 +241,10 @@ func (s *Service) EnqueuePlan(ctx context.Context, runID string) (run *Run, err 
 			return run.EnqueuePlan()
 		})
 		if err != nil {
-			s.Error(err, "enqueuing plan", "id", runID, "subject", subject)
+			s.logger.Error("enqueuing plan", "id", runID, "subject", subject, "err", err)
 			return err
 		}
-		s.V(0).Info("enqueued plan", "id", runID, "subject", subject)
+		s.logger.Info("enqueued plan", "id", runID, "subject", subject)
 		// invoke AfterEnqueuePlan hooks
 		for _, hook := range s.afterEnqueuePlanHooks {
 			if err := hook(ctx, run); err != nil {
@@ -273,10 +273,10 @@ func (s *Service) Delete(ctx context.Context, runID string) error {
 	}
 
 	if err := s.db.DeleteRun(ctx, runID); err != nil {
-		s.Error(err, "deleting run", "id", runID, "subject", subject)
+		s.logger.Error("deleting run", "id", runID, "subject", subject, "err", err)
 		return err
 	}
-	s.V(0).Info("deleted run", "id", runID, "subject", subject)
+	s.logger.Info("deleted run", "id", runID, "subject", subject)
 	return nil
 }
 
@@ -292,11 +292,11 @@ func (s *Service) StartPhase(ctx context.Context, runID string, phase internal.P
 		// error condition and not something that should be reported to the
 		// user.
 		if !errors.Is(err, ErrPhaseAlreadyStarted) {
-			s.Error(err, "starting "+string(phase), "id", runID)
+			s.logger.Error("starting "+string(phase), "id", runID, "err", err)
 		}
 		return nil, err
 	}
-	s.V(0).Info("started "+string(phase), "id", runID)
+	s.logger.Info("started "+string(phase), "id", runID)
 	return run, nil
 }
 
@@ -308,7 +308,7 @@ func (s *Service) FinishPhase(ctx context.Context, runID string, phase internal.
 		var err error
 		resourceReport, outputReport, err = s.createReports(ctx, runID, phase)
 		if err != nil {
-			s.Error(err, "creating report", "id", runID, "phase", phase)
+			s.logger.Error("creating report", "id", runID, "phase", phase, "err", err)
 			opts.Errored = true
 		}
 	}
@@ -325,14 +325,29 @@ func (s *Service) FinishPhase(ctx context.Context, runID string, phase internal.
 		if autoapply {
 			return s.Apply(ctx, runID)
 		}
+		if !opts.Errored && !run.PlanOnly && (run.Status == RunApplied || run.Status == RunPlannedAndFinished) {
+			s.logger.Debug("Invoking afterSuccessfulApplyHooks", "id", runID)
+			// invoke AfterEnqueueApply hooks
+			for _, hook := range s.afterSuccessfulApplyHooks {
+				if err := hook(ctx, run); err != nil {
+					s.logger.Error("Failed to invoke afterSuccessfulApply hooks", "id", runID, "err", err)
+				}
+			}
+		}
 		return nil
 	})
 	if err != nil {
-		s.Error(err, "finishing "+string(phase), "id", runID, "subject")
+		s.logger.Error("finishing "+string(phase), "id", runID, "err", err)
 		return nil, err
 	}
-	s.V(0).Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "run_status", run.Status)
+
+	s.logger.Info("finished "+string(phase), "id", runID, "resource_changes", resourceReport, "output_changes", outputReport, "run_status", run.Status)
 	return run, nil
+}
+
+func (s *Service) AfterSuccessfulApply(hook func(context.Context, *Run) error) {
+	// add hook to list of hooks to be triggered after apply is enqueued
+	s.afterSuccessfulApplyHooks = append(s.afterSuccessfulApplyHooks, hook)
 }
 
 func (s *Service) Watch(ctx context.Context) (<-chan pubsub.Event[*Run], func()) {
@@ -393,11 +408,11 @@ func (s *Service) Apply(ctx context.Context, runID string) error {
 			return run.EnqueueApply()
 		})
 		if err != nil {
-			s.Error(err, "enqueuing apply", "id", runID, "subject", subject)
+			s.logger.Error("enqueuing apply", "id", runID, "subject", subject, "err", err)
 			return err
 		}
 
-		s.V(0).Info("enqueued apply", "id", runID, "subject", subject)
+		s.logger.Info("enqueued apply", "id", runID, "subject", subject)
 		// invoke AfterEnqueueApply hooks
 		for _, hook := range s.afterEnqueueApplyHooks {
 			if err := hook(ctx, run); err != nil {
@@ -424,11 +439,11 @@ func (s *Service) Discard(ctx context.Context, runID string) error {
 		return run.Discard()
 	})
 	if err != nil {
-		s.Error(err, "discarding run", "id", runID, "subject", subject)
+		s.logger.Error("discarding run", "id", runID, "subject", subject, "err", err)
 		return err
 	}
 
-	s.V(0).Info("discarded run", "id", runID, "subject", subject)
+	s.logger.Info("discarded run", "id", runID, "subject", subject)
 
 	return err
 }
@@ -445,13 +460,13 @@ func (s *Service) Cancel(ctx context.Context, runID string) error {
 			return run.Cancel(isUser, false)
 		})
 		if err != nil {
-			s.Error(err, "canceling run", "id", runID, "subject", subject)
+			s.logger.Error("canceling run", "id", runID, "subject", subject, "err", err)
 			return err
 		}
 		if run.CancelSignaledAt != nil && run.Status != RunCanceled {
-			s.V(0).Info("sent cancelation signal to run", "id", runID, "subject", subject)
+			s.logger.Info("sent cancelation signal to run", "id", runID, "subject", subject)
 		} else {
-			s.V(0).Info("canceled run", "id", runID, "subject", subject)
+			s.logger.Info("canceled run", "id", runID, "subject", subject)
 		}
 		// invoke AfterCancel hooks
 		for _, hook := range s.afterCancelHooks {
@@ -479,10 +494,10 @@ func (s *Service) ForceCancel(ctx context.Context, runID string) error {
 			return run.Cancel(true, true)
 		})
 		if err != nil {
-			s.Error(err, "force canceling run", "id", runID, "subject", subject)
+			s.logger.Error("force canceling run", "id", runID, "subject", subject, "err", err)
 			return err
 		}
-		s.V(0).Info("force canceled run", "id", runID, "subject", subject)
+		s.logger.Info("force canceled run", "id", runID, "subject", subject)
 		// invoke AfterForceCancelRun hooks
 		for _, hook := range s.afterForceCancelHooks {
 			if err := hook(ctx, run); err != nil {
@@ -515,12 +530,12 @@ func (s *Service) GetPlanFile(ctx context.Context, runID string, format PlanForm
 	// Cache is empty; retrieve from DB
 	file, err := s.db.GetPlanFile(ctx, runID, format)
 	if err != nil {
-		s.Error(err, "retrieving plan file", "id", runID, "format", format, "subject", subject)
+		s.logger.Error("retrieving plan file", "id", runID, "format", format, "subject", subject, "err", err)
 		return nil, err
 	}
 	// Cache plan before returning
 	if err := s.cache.Set(planFileCacheKey(format, runID), file); err != nil {
-		s.Error(err, "caching plan file")
+		s.logger.Error("caching plan file", "err", err)
 	}
 	return file, nil
 }
@@ -534,14 +549,14 @@ func (s *Service) UploadPlanFile(ctx context.Context, runID string, plan []byte,
 	}
 
 	if err := s.db.SetPlanFile(ctx, runID, plan, format); err != nil {
-		s.Error(err, "uploading plan file", "id", runID, "format", format, "subject", subject)
+		s.logger.Error("uploading plan file", "id", runID, "format", format, "subject", subject, "err", err)
 		return err
 	}
 
-	s.V(1).Info("uploaded plan file", "id", runID, "format", format, "subject", subject)
+	s.logger.Info("uploaded plan file", "id", runID, "format", format, "subject", subject)
 
 	if err := s.cache.Set(planFileCacheKey(format, runID), plan); err != nil {
-		s.Error(err, "caching plan file")
+		s.logger.Error("caching plan file", "err", err)
 	}
 
 	return nil

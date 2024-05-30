@@ -30,13 +30,13 @@ const insertConfigurationVersionSQL = `INSERT INTO configuration_versions (
 );`
 
 type InsertConfigurationVersionParams struct {
-	ID            pgtype.Text
-	CreatedAt     pgtype.Timestamptz
-	AutoQueueRuns pgtype.Bool
-	Source        pgtype.Text
-	Speculative   pgtype.Bool
-	Status        pgtype.Text
-	WorkspaceID   pgtype.Text
+	ID            pgtype.Text        `json:"id"`
+	CreatedAt     pgtype.Timestamptz `json:"created_at"`
+	AutoQueueRuns pgtype.Bool        `json:"auto_queue_runs"`
+	Source        pgtype.Text        `json:"source"`
+	Speculative   pgtype.Bool        `json:"speculative"`
+	Status        pgtype.Text        `json:"status"`
+	WorkspaceID   pgtype.Text        `json:"workspace_id"`
 }
 
 // InsertConfigurationVersion implements Querier.InsertConfigurationVersion.
@@ -75,9 +75,9 @@ const insertConfigurationVersionStatusTimestampSQL = `INSERT INTO configuration_
 RETURNING *;`
 
 type InsertConfigurationVersionStatusTimestampParams struct {
-	ID        pgtype.Text
-	Status    pgtype.Text
-	Timestamp pgtype.Timestamptz
+	ID        pgtype.Text        `json:"id"`
+	Status    pgtype.Text        `json:"status"`
+	Timestamp pgtype.Timestamptz `json:"timestamp"`
 }
 
 type InsertConfigurationVersionStatusTimestampRow struct {
@@ -135,9 +135,9 @@ LIMIT $2
 OFFSET $3;`
 
 type FindConfigurationVersionsByWorkspaceIDParams struct {
-	WorkspaceID pgtype.Text
-	Limit       pgtype.Int8
-	Offset      pgtype.Int8
+	WorkspaceID pgtype.Text `json:"workspace_id"`
+	Limit       pgtype.Int8 `json:"limit"`
+	Offset      pgtype.Int8 `json:"offset"`
 }
 
 type FindConfigurationVersionsByWorkspaceIDRow struct {

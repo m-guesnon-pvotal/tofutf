@@ -50,23 +50,23 @@ const insertRunSQL = `INSERT INTO runs (
 );`
 
 type InsertRunParams struct {
-	ID                     pgtype.Text
-	CreatedAt              pgtype.Timestamptz
-	IsDestroy              pgtype.Bool
-	PositionInQueue        pgtype.Int4
-	Refresh                pgtype.Bool
-	RefreshOnly            pgtype.Bool
-	Source                 pgtype.Text
-	Status                 pgtype.Text
-	ReplaceAddrs           []string
-	TargetAddrs            []string
-	AutoApply              pgtype.Bool
-	PlanOnly               pgtype.Bool
-	ConfigurationVersionID pgtype.Text
-	WorkspaceID            pgtype.Text
-	CreatedBy              pgtype.Text
-	TerraformVersion       pgtype.Text
-	AllowEmptyApply        pgtype.Bool
+	ID                     pgtype.Text        `json:"id"`
+	CreatedAt              pgtype.Timestamptz `json:"created_at"`
+	IsDestroy              pgtype.Bool        `json:"is_destroy"`
+	PositionInQueue        pgtype.Int4        `json:"position_in_queue"`
+	Refresh                pgtype.Bool        `json:"refresh"`
+	RefreshOnly            pgtype.Bool        `json:"refresh_only"`
+	Source                 pgtype.Text        `json:"source"`
+	Status                 pgtype.Text        `json:"status"`
+	ReplaceAddrs           []string           `json:"replace_addrs"`
+	TargetAddrs            []string           `json:"target_addrs"`
+	AutoApply              pgtype.Bool        `json:"auto_apply"`
+	PlanOnly               pgtype.Bool        `json:"plan_only"`
+	ConfigurationVersionID pgtype.Text        `json:"configuration_version_id"`
+	WorkspaceID            pgtype.Text        `json:"workspace_id"`
+	CreatedBy              pgtype.Text        `json:"created_by"`
+	TerraformVersion       pgtype.Text        `json:"terraform_version"`
+	AllowEmptyApply        pgtype.Bool        `json:"allow_empty_apply"`
 }
 
 // InsertRun implements Querier.InsertRun.
@@ -104,9 +104,9 @@ const insertRunStatusTimestampSQL = `INSERT INTO run_status_timestamps (
 );`
 
 type InsertRunStatusTimestampParams struct {
-	ID        pgtype.Text
-	Status    pgtype.Text
-	Timestamp pgtype.Timestamptz
+	ID        pgtype.Text        `json:"id"`
+	Status    pgtype.Text        `json:"status"`
+	Timestamp pgtype.Timestamptz `json:"timestamp"`
 }
 
 // InsertRunStatusTimestamp implements Querier.InsertRunStatusTimestamp.
@@ -144,9 +144,9 @@ const insertRunVariableSQL = `INSERT INTO run_variables (
 );`
 
 type InsertRunVariableParams struct {
-	RunID pgtype.Text
-	Key   pgtype.Text
-	Value pgtype.Text
+	RunID pgtype.Text `json:"run_id"`
+	Key   pgtype.Text `json:"key"`
+	Value pgtype.Text `json:"value"`
 }
 
 // InsertRunVariable implements Querier.InsertRunVariable.
@@ -250,16 +250,16 @@ LIMIT $9 OFFSET $10
 ;`
 
 type FindRunsParams struct {
-	OrganizationNames []string
-	WorkspaceIds      []string
-	WorkspaceNames    []string
-	Sources           []string
-	Statuses          []string
-	PlanOnly          []string
-	CommitSHA         pgtype.Text
-	VCSUsername       pgtype.Text
-	Limit             pgtype.Int8
-	Offset            pgtype.Int8
+	OrganizationNames []string    `json:"organization_names"`
+	WorkspaceIds      []string    `json:"workspace_ids"`
+	WorkspaceNames    []string    `json:"workspace_names"`
+	Sources           []string    `json:"sources"`
+	Statuses          []string    `json:"statuses"`
+	PlanOnly          []string    `json:"plan_only"`
+	CommitSHA         pgtype.Text `json:"commit_sha"`
+	VCSUsername       pgtype.Text `json:"vcs_username"`
+	Limit             pgtype.Int8 `json:"limit"`
+	Offset            pgtype.Int8 `json:"offset"`
 }
 
 type FindRunsRow struct {
@@ -425,14 +425,14 @@ AND (($8::text IS NULL) OR ia.sender_username = $8)
 ;`
 
 type CountRunsParams struct {
-	OrganizationNames []string
-	WorkspaceIds      []string
-	WorkspaceNames    []string
-	Sources           []string
-	Statuses          []string
-	PlanOnly          []string
-	CommitSHA         pgtype.Text
-	VCSUsername       pgtype.Text
+	OrganizationNames []string    `json:"organization_names"`
+	WorkspaceIds      []string    `json:"workspace_ids"`
+	WorkspaceNames    []string    `json:"workspace_names"`
+	Sources           []string    `json:"sources"`
+	Statuses          []string    `json:"statuses"`
+	PlanOnly          []string    `json:"plan_only"`
+	CommitSHA         pgtype.Text `json:"commit_sha"`
+	VCSUsername       pgtype.Text `json:"vcs_username"`
 }
 
 // CountRuns implements Querier.CountRuns.

@@ -9,6 +9,7 @@ import (
 	"github.com/gorilla/mux"
 	"github.com/leg100/surl"
 	"github.com/tofutf/tofutf/internal"
+	otfapi "github.com/tofutf/tofutf/internal/api"
 	"github.com/tofutf/tofutf/internal/http/decode"
 	"github.com/tofutf/tofutf/internal/tfeapi"
 )
@@ -59,7 +60,7 @@ func (h *api) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
 		Organization string `schema:"organization,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		otfapi.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -69,7 +70,7 @@ func (h *api) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
 		Organization: params.Organization,
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		otfapi.HandleError(w, err, http.StatusNotFound)
 		return
 	}
 
@@ -88,7 +89,7 @@ func (h *api) listAvailableVersions(w http.ResponseWriter, r *http.Request) {
 		})
 	}
 	if err := json.NewEncoder(w).Encode(response); err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		otfapi.HandleError(w, err, http.StatusInternalServerError)
 	}
 }
 
@@ -100,7 +101,7 @@ func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 		Version      string `schema:"version,required"`
 	}
 	if err := decode.Route(&params, r); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		otfapi.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 
@@ -110,7 +111,7 @@ func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 		Organization: params.Organization,
 	})
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		otfapi.HandleError(w, err, http.StatusNotFound)
 		return
 	}
 
@@ -122,7 +123,7 @@ func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 
 	signed, err := h.Sign("/modules/download/"+version.ID+".tar.gz", time.Hour)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		otfapi.HandleError(w, err, http.StatusInternalServerError)
 		return
 	}
 
@@ -133,13 +134,13 @@ func (h *api) getModuleVersionDownloadLink(w http.ResponseWriter, r *http.Reques
 func (h *api) downloadModuleVersion(w http.ResponseWriter, r *http.Request) {
 	id, err := decode.Param("module_version_id", r)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		otfapi.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 
 	tarball, err := h.svc.downloadVersion(r.Context(), id)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		otfapi.HandleError(w, err, http.StatusNotFound)
 		return
 	}
 

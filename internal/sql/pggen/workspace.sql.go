@@ -68,32 +68,32 @@ const insertWorkspaceSQL = `INSERT INTO workspaces (
 );`
 
 type InsertWorkspaceParams struct {
-	ID                         pgtype.Text
-	CreatedAt                  pgtype.Timestamptz
-	UpdatedAt                  pgtype.Timestamptz
-	AgentPoolID                pgtype.Text
-	AllowCLIApply              pgtype.Bool
-	AllowDestroyPlan           pgtype.Bool
-	AutoApply                  pgtype.Bool
-	Branch                     pgtype.Text
-	CanQueueDestroyPlan        pgtype.Bool
-	Description                pgtype.Text
-	Environment                pgtype.Text
-	ExecutionMode              pgtype.Text
-	GlobalRemoteState          pgtype.Bool
-	MigrationEnvironment       pgtype.Text
-	Name                       pgtype.Text
-	QueueAllRuns               pgtype.Bool
-	SpeculativeEnabled         pgtype.Bool
-	SourceName                 pgtype.Text
-	SourceURL                  pgtype.Text
-	StructuredRunOutputEnabled pgtype.Bool
-	TerraformVersion           pgtype.Text
-	TriggerPrefixes            []string
-	TriggerPatterns            []string
-	VCSTagsRegex               pgtype.Text
-	WorkingDirectory           pgtype.Text
-	OrganizationName           pgtype.Text
+	ID                         pgtype.Text        `json:"id"`
+	CreatedAt                  pgtype.Timestamptz `json:"created_at"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
+	AllowCLIApply              pgtype.Bool        `json:"allow_cli_apply"`
+	AllowDestroyPlan           pgtype.Bool        `json:"allow_destroy_plan"`
+	AutoApply                  pgtype.Bool        `json:"auto_apply"`
+	Branch                     pgtype.Text        `json:"branch"`
+	CanQueueDestroyPlan        pgtype.Bool        `json:"can_queue_destroy_plan"`
+	Description                pgtype.Text        `json:"description"`
+	Environment                pgtype.Text        `json:"environment"`
+	ExecutionMode              pgtype.Text        `json:"execution_mode"`
+	GlobalRemoteState          pgtype.Bool        `json:"global_remote_state"`
+	MigrationEnvironment       pgtype.Text        `json:"migration_environment"`
+	Name                       pgtype.Text        `json:"name"`
+	QueueAllRuns               pgtype.Bool        `json:"queue_all_runs"`
+	SpeculativeEnabled         pgtype.Bool        `json:"speculative_enabled"`
+	SourceName                 pgtype.Text        `json:"source_name"`
+	SourceURL                  pgtype.Text        `json:"source_url"`
+	StructuredRunOutputEnabled pgtype.Bool        `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text        `json:"terraform_version"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
+	TriggerPatterns            []string           `json:"trigger_patterns"`
+	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
+	WorkingDirectory           pgtype.Text        `json:"working_directory"`
+	OrganizationName           pgtype.Text        `json:"organization_name"`
 }
 
 // InsertWorkspace implements Querier.InsertWorkspace.
@@ -157,11 +157,11 @@ OFFSET $5
 ;`
 
 type FindWorkspacesParams struct {
-	Search            pgtype.Text
-	OrganizationNames []string
-	Tags              []string
-	Limit             pgtype.Int8
-	Offset            pgtype.Int8
+	Search            pgtype.Text `json:"search"`
+	OrganizationNames []string    `json:"organization_names"`
+	Tags              []string    `json:"tags"`
+	Limit             pgtype.Int8 `json:"limit"`
+	Offset            pgtype.Int8 `json:"offset"`
 }
 
 type FindWorkspacesRow struct {
@@ -289,9 +289,9 @@ FROM workspaces
 ;`
 
 type CountWorkspacesParams struct {
-	Search            pgtype.Text
-	OrganizationNames []string
-	Tags              []string
+	Search            pgtype.Text `json:"search"`
+	OrganizationNames []string    `json:"organization_names"`
+	Tags              []string    `json:"tags"`
 }
 
 // CountWorkspaces implements Querier.CountWorkspaces.
@@ -480,10 +480,10 @@ OFFSET $4
 ;`
 
 type FindWorkspacesByUsernameParams struct {
-	OrganizationName pgtype.Text
-	Username         pgtype.Text
-	Limit            pgtype.Int8
-	Offset           pgtype.Int8
+	OrganizationName pgtype.Text `json:"organization_name"`
+	Username         pgtype.Text `json:"username"`
+	Limit            pgtype.Int8 `json:"limit"`
+	Offset           pgtype.Int8 `json:"offset"`
 }
 
 type FindWorkspacesByUsernameRow struct {
@@ -978,25 +978,25 @@ WHERE workspace_id = $19
 RETURNING workspace_id;`
 
 type UpdateWorkspaceByIDParams struct {
-	AgentPoolID                pgtype.Text
-	AllowDestroyPlan           pgtype.Bool
-	AllowCLIApply              pgtype.Bool
-	AutoApply                  pgtype.Bool
-	Branch                     pgtype.Text
-	Description                pgtype.Text
-	ExecutionMode              pgtype.Text
-	GlobalRemoteState          pgtype.Bool
-	Name                       pgtype.Text
-	QueueAllRuns               pgtype.Bool
-	SpeculativeEnabled         pgtype.Bool
-	StructuredRunOutputEnabled pgtype.Bool
-	TerraformVersion           pgtype.Text
-	TriggerPrefixes            []string
-	TriggerPatterns            []string
-	VCSTagsRegex               pgtype.Text
-	WorkingDirectory           pgtype.Text
-	UpdatedAt                  pgtype.Timestamptz
-	ID                         pgtype.Text
+	AgentPoolID                pgtype.Text        `json:"agent_pool_id"`
+	AllowDestroyPlan           pgtype.Bool        `json:"allow_destroy_plan"`
+	AllowCLIApply              pgtype.Bool        `json:"allow_cli_apply"`
+	AutoApply                  pgtype.Bool        `json:"auto_apply"`
+	Branch                     pgtype.Text        `json:"branch"`
+	Description                pgtype.Text        `json:"description"`
+	ExecutionMode              pgtype.Text        `json:"execution_mode"`
+	GlobalRemoteState          pgtype.Bool        `json:"global_remote_state"`
+	Name                       pgtype.Text        `json:"name"`
+	QueueAllRuns               pgtype.Bool        `json:"queue_all_runs"`
+	SpeculativeEnabled         pgtype.Bool        `json:"speculative_enabled"`
+	StructuredRunOutputEnabled pgtype.Bool        `json:"structured_run_output_enabled"`
+	TerraformVersion           pgtype.Text        `json:"terraform_version"`
+	TriggerPrefixes            []string           `json:"trigger_prefixes"`
+	TriggerPatterns            []string           `json:"trigger_patterns"`
+	VCSTagsRegex               pgtype.Text        `json:"vcs_tags_regex"`
+	WorkingDirectory           pgtype.Text        `json:"working_directory"`
+	UpdatedAt                  pgtype.Timestamptz `json:"updated_at"`
+	ID                         pgtype.Text        `json:"id"`
 }
 
 // UpdateWorkspaceByID implements Querier.UpdateWorkspaceByID.
@@ -1032,9 +1032,9 @@ SET
 WHERE workspace_id = $3;`
 
 type UpdateWorkspaceLockByIDParams struct {
-	Username    pgtype.Text
-	RunID       pgtype.Text
-	WorkspaceID pgtype.Text
+	Username    pgtype.Text `json:"username"`
+	RunID       pgtype.Text `json:"run_id"`
+	WorkspaceID pgtype.Text `json:"workspace_id"`
 }
 
 // UpdateWorkspaceLockByID implements Querier.UpdateWorkspaceLockByID.

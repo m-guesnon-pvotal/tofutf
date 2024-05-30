@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strings"
 
-	"github.com/go-logr/logr"
 	"github.com/gorilla/mux"
 	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
@@ -37,9 +37,9 @@ var AuthenticatedPrefixes = []string{
 type (
 	middlewareOptions struct {
 		GoogleIAPConfig
-		logr.Logger
 
-		key jwk.Key
+		logger *slog.Logger
+		key    jwk.Key
 
 		*registry
 	}
@@ -91,14 +91,14 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 			if token := r.Header.Get(googleIAPHeader); token != "" {
 				subject, err = mw.validateIAPToken(ctx, token)
 				if err != nil {
-					http.Error(w, err.Error(), http.StatusUnauthorized)
+					otfapi.HandleError(w, err, http.StatusUnauthorized)
 					return
 				}
 			} else if bearer := r.Header.Get("Authorization"); bearer != "" {
 				subject, err = mw.validateBearer(ctx, bearer)
 				if err != nil {
-					mw.Error(err, "validating bearer token")
-					http.Error(w, err.Error(), http.StatusUnauthorized)
+					mw.logger.Error("validating bearer token", "err", err)
+					otfapi.HandleError(w, err, http.StatusUnauthorized)
 					return
 				}
 			} else if strings.HasPrefix(r.URL.Path, paths.UIPrefix) {
@@ -109,7 +109,7 @@ func newMiddleware(opts middlewareOptions) mux.MiddlewareFunc {
 					return
 				}
 			} else {
-				http.Error(w, "no authentication token found", http.StatusUnauthorized)
+				otfapi.HandleError(w, errors.New("no authentication token found"), http.StatusUnauthorized)
 				return
 			}
 			ctx = internal.AddSubjectToContext(r.Context(), subject)

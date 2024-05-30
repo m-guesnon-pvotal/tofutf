@@ -4,6 +4,7 @@ import (
 	"crypto/sha256"
 	"encoding/base64"
 	"encoding/json"
+	"github.com/tofutf/tofutf/internal/api"
 	"net/http"
 	"net/url"
 
@@ -21,7 +22,7 @@ func (s *server) tokenHandler(w http.ResponseWriter, r *http.Request) {
 		RedirectURI  string `schema:"redirect_uri"`
 	}
 	if err := decode.All(&params, r); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		api.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 

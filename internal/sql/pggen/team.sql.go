@@ -40,18 +40,18 @@ const insertTeamSQL = `INSERT INTO teams (
 );`
 
 type InsertTeamParams struct {
-	ID                              pgtype.Text
-	Name                            pgtype.Text
-	CreatedAt                       pgtype.Timestamptz
-	OrganizationName                pgtype.Text
-	Visibility                      pgtype.Text
-	SSOTeamID                       pgtype.Text
-	PermissionManageWorkspaces      pgtype.Bool
-	PermissionManageVCS             pgtype.Bool
-	PermissionManageModules         pgtype.Bool
-	PermissionManageProviders       pgtype.Bool
-	PermissionManagePolicies        pgtype.Bool
-	PermissionManagePolicyOverrides pgtype.Bool
+	ID                              pgtype.Text        `json:"id"`
+	Name                            pgtype.Text        `json:"name"`
+	CreatedAt                       pgtype.Timestamptz `json:"created_at"`
+	OrganizationName                pgtype.Text        `json:"organization_name"`
+	Visibility                      pgtype.Text        `json:"visibility"`
+	SSOTeamID                       pgtype.Text        `json:"sso_team_id"`
+	PermissionManageWorkspaces      pgtype.Bool        `json:"permission_manage_workspaces"`
+	PermissionManageVCS             pgtype.Bool        `json:"permission_manage_vcs"`
+	PermissionManageModules         pgtype.Bool        `json:"permission_manage_modules"`
+	PermissionManageProviders       pgtype.Bool        `json:"permission_manage_providers"`
+	PermissionManagePolicies        pgtype.Bool        `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides pgtype.Bool        `json:"permission_manage_policy_overrides"`
 }
 
 // InsertTeam implements Querier.InsertTeam.
@@ -348,16 +348,16 @@ WHERE team_id = $10
 RETURNING team_id;`
 
 type UpdateTeamByIDParams struct {
-	Name                            pgtype.Text
-	Visibility                      pgtype.Text
-	SSOTeamID                       pgtype.Text
-	PermissionManageWorkspaces      pgtype.Bool
-	PermissionManageVCS             pgtype.Bool
-	PermissionManageModules         pgtype.Bool
-	PermissionManageProviders       pgtype.Bool
-	PermissionManagePolicies        pgtype.Bool
-	PermissionManagePolicyOverrides pgtype.Bool
-	TeamID                          pgtype.Text
+	Name                            pgtype.Text `json:"name"`
+	Visibility                      pgtype.Text `json:"visibility"`
+	SSOTeamID                       pgtype.Text `json:"sso_team_id"`
+	PermissionManageWorkspaces      pgtype.Bool `json:"permission_manage_workspaces"`
+	PermissionManageVCS             pgtype.Bool `json:"permission_manage_vcs"`
+	PermissionManageModules         pgtype.Bool `json:"permission_manage_modules"`
+	PermissionManageProviders       pgtype.Bool `json:"permission_manage_providers"`
+	PermissionManagePolicies        pgtype.Bool `json:"permission_manage_policies"`
+	PermissionManagePolicyOverrides pgtype.Bool `json:"permission_manage_policy_overrides"`
+	TeamID                          pgtype.Text `json:"team_id"`
 }
 
 // UpdateTeamByID implements Querier.UpdateTeamByID.

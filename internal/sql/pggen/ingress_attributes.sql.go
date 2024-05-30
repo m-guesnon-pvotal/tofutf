@@ -44,20 +44,20 @@ const insertIngressAttributesSQL = `INSERT INTO ingress_attributes (
 );`
 
 type InsertIngressAttributesParams struct {
-	Branch                 pgtype.Text
-	CommitSHA              pgtype.Text
-	CommitURL              pgtype.Text
-	PullRequestNumber      pgtype.Int4
-	PullRequestURL         pgtype.Text
-	PullRequestTitle       pgtype.Text
-	SenderUsername         pgtype.Text
-	SenderAvatarURL        pgtype.Text
-	SenderHTMLURL          pgtype.Text
-	Identifier             pgtype.Text
-	Tag                    pgtype.Text
-	IsPullRequest          pgtype.Bool
-	OnDefaultBranch        pgtype.Bool
-	ConfigurationVersionID pgtype.Text
+	Branch                 pgtype.Text `json:"branch"`
+	CommitSHA              pgtype.Text `json:"commit_sha"`
+	CommitURL              pgtype.Text `json:"commit_url"`
+	PullRequestNumber      pgtype.Int4 `json:"pull_request_number"`
+	PullRequestURL         pgtype.Text `json:"pull_request_url"`
+	PullRequestTitle       pgtype.Text `json:"pull_request_title"`
+	SenderUsername         pgtype.Text `json:"sender_username"`
+	SenderAvatarURL        pgtype.Text `json:"sender_avatar_url"`
+	SenderHTMLURL          pgtype.Text `json:"sender_html_url"`
+	Identifier             pgtype.Text `json:"identifier"`
+	Tag                    pgtype.Text `json:"tag"`
+	IsPullRequest          pgtype.Bool `json:"is_pull_request"`
+	OnDefaultBranch        pgtype.Bool `json:"on_default_branch"`
+	ConfigurationVersionID pgtype.Text `json:"configuration_version_id"`
 }
 
 // InsertIngressAttributes implements Querier.InsertIngressAttributes.

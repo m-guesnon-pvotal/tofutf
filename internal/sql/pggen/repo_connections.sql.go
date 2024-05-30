@@ -24,10 +24,10 @@ const insertRepoConnectionSQL = `INSERT INTO repo_connections (
 );`
 
 type InsertRepoConnectionParams struct {
-	VCSProviderID pgtype.Text
-	RepoPath      pgtype.Text
-	WorkspaceID   pgtype.Text
-	ModuleID      pgtype.Text
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
+	RepoPath      pgtype.Text `json:"repo_path"`
+	WorkspaceID   pgtype.Text `json:"workspace_id"`
+	ModuleID      pgtype.Text `json:"module_id"`
 }
 
 // InsertRepoConnection implements Querier.InsertRepoConnection.

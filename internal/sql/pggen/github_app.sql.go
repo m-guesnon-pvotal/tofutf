@@ -26,11 +26,11 @@ const insertGithubAppSQL = `INSERT INTO github_apps (
 );`
 
 type InsertGithubAppParams struct {
-	GithubAppID   pgtype.Int8
-	WebhookSecret pgtype.Text
-	PrivateKey    pgtype.Text
-	Slug          pgtype.Text
-	Organization  pgtype.Text
+	GithubAppID   pgtype.Int8 `json:"github_app_id"`
+	WebhookSecret pgtype.Text `json:"webhook_secret"`
+	PrivateKey    pgtype.Text `json:"private_key"`
+	Slug          pgtype.Text `json:"slug"`
+	Organization  pgtype.Text `json:"organization"`
 }
 
 // InsertGithubApp implements Querier.InsertGithubApp.
@@ -148,11 +148,11 @@ const insertGithubAppInstallSQL = `INSERT INTO github_app_installs (
 );`
 
 type InsertGithubAppInstallParams struct {
-	GithubAppID   pgtype.Int8
-	InstallID     pgtype.Int8
-	Username      pgtype.Text
-	Organization  pgtype.Text
-	VCSProviderID pgtype.Text
+	GithubAppID   pgtype.Int8 `json:"github_app_id"`
+	InstallID     pgtype.Int8 `json:"install_id"`
+	Username      pgtype.Text `json:"username"`
+	Organization  pgtype.Text `json:"organization"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
 }
 
 // InsertGithubAppInstall implements Querier.InsertGithubAppInstall.

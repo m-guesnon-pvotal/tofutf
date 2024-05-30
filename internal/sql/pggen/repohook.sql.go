@@ -37,11 +37,11 @@ FROM inserted w
 JOIN vcs_providers v USING (vcs_provider_id);`
 
 type InsertRepohookParams struct {
-	RepohookID    pgtype.UUID
-	VCSID         pgtype.Text
-	VCSProviderID pgtype.Text
-	Secret        pgtype.Text
-	RepoPath      pgtype.Text
+	RepohookID    pgtype.UUID `json:"repohook_id"`
+	VCSID         pgtype.Text `json:"vcs_id"`
+	VCSProviderID pgtype.Text `json:"vcs_provider_id"`
+	Secret        pgtype.Text `json:"secret"`
+	RepoPath      pgtype.Text `json:"repo_path"`
 }
 
 type InsertRepohookRow struct {

@@ -24,10 +24,10 @@ const insertAgentTokenSQL = `INSERT INTO agent_tokens (
 );`
 
 type InsertAgentTokenParams struct {
-	AgentTokenID pgtype.Text
-	CreatedAt    pgtype.Timestamptz
-	Description  pgtype.Text
-	AgentPoolID  pgtype.Text
+	AgentTokenID pgtype.Text        `json:"agent_token_id"`
+	CreatedAt    pgtype.Timestamptz `json:"created_at"`
+	Description  pgtype.Text        `json:"description"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
 }
 
 // InsertAgentToken implements Querier.InsertAgentToken.

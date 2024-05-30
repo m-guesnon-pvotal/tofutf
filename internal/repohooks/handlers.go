@@ -3,10 +3,11 @@ package repohooks
 import (
 	"context"
 	"errors"
+	"github.com/tofutf/tofutf/internal/api"
+	"log/slog"
 	"net/http"
 	"path"
 
-	"github.com/go-logr/logr"
 	"github.com/google/uuid"
 	"github.com/gorilla/mux"
 	"github.com/tofutf/tofutf/internal"
@@ -22,10 +23,10 @@ const (
 type (
 	// handlers handle VCS events triggered by webhooks
 	handlers struct {
-		logr.Logger
 		vcs.Publisher
 
 		cloudHandlers *internal.SafeMap[vcs.Kind, EventUnmarshaler]
+		logger        *slog.Logger
 
 		handlerDB
 	}
@@ -42,9 +43,9 @@ type (
 	}
 )
 
-func newHandler(logger logr.Logger, publisher vcs.Publisher, db handlerDB) *handlers {
+func newHandler(logger *slog.Logger, publisher vcs.Publisher, db handlerDB) *handlers {
 	return &handlers{
-		Logger:        logger,
+		logger:        logger,
 		Publisher:     publisher,
 		handlerDB:     db,
 		cloudHandlers: internal.NewSafeMap[vcs.Kind, EventUnmarshaler](),
@@ -60,20 +61,20 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 		ID uuid.UUID `schema:"webhook_id,required"`
 	}
 	if err := decode.All(&opts, r); err != nil {
-		http.Error(w, err.Error(), http.StatusUnprocessableEntity)
+		api.HandleError(w, err, http.StatusUnprocessableEntity)
 		return
 	}
 	hook, err := h.getHookByID(r.Context(), opts.ID)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusNotFound)
+		api.HandleError(w, err, http.StatusNotFound)
 		return
 	}
-	h.V(2).Info("received vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
+	h.logger.Debug("received vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
 
 	// look up cloud-specific handler for event
 	cloudHandler, ok := h.cloudHandlers.Get(hook.cloud)
 	if !ok {
-		h.Error(nil, "no event unmarshaler found for event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
+		h.logger.Error("no event unmarshaler found for event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
 		http.Error(w, "no event unmarshaler found for event", http.StatusNotFound)
 		return
 	}
@@ -82,11 +83,11 @@ func (h *handlers) repohookHandler(w http.ResponseWriter, r *http.Request) {
 	// either ignore the event, return an error, or publish the event onwards
 	var ignore vcs.ErrIgnoreEvent
 	if errors.As(err, &ignore) {
-		h.V(2).Info("ignoring event: "+err.Error(), "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
+		h.logger.Info("ignoring event: "+err.Error(), "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
 		return
 	} else if err != nil {
-		h.Error(err, "handling vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud)
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		h.logger.Error("handling vcs event", "repohook_id", opts.ID, "repo", hook.repoPath, "cloud", hook.cloud, "err", err)
+		api.HandleError(w, err, http.StatusBadRequest)
 		return
 	}
 	h.Publish(vcs.Event{

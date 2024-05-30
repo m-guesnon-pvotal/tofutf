@@ -87,7 +87,7 @@ func (a *CLI) newClient(cfg *api.Config) func(*cobra.Command, []string) error {
 			cfg.Token = token
 		}
 
-		httpClient, err := api.NewClient(*cfg)
+		httpClient, err := api.NewClient(*cfg, nil)
 		if err != nil {
 			return err
 		}

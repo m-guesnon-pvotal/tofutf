@@ -895,6 +895,41 @@ type Querier interface {
 	// DeleteRunByIDScan scans the result of an executed DeleteRunByIDBatch query.
 	DeleteRunByIDScan(results pgx.BatchResults) (pgtype.Text, error)
 
+	InsertRunTrigger(ctx context.Context, params InsertRunTriggerParams) (pgconn.CommandTag, error)
+	// InsertRunTriggerBatch enqueues a InsertRunTrigger query into batch to be executed
+	// later by the batch.
+	InsertRunTriggerBatch(batch genericBatch, params InsertRunTriggerParams)
+	// InsertRunTriggerScan scans the result of an executed InsertRunTriggerBatch query.
+	InsertRunTriggerScan(results pgx.BatchResults) (pgconn.CommandTag, error)
+
+	FindRunTriggersBySourceableID(ctx context.Context, sourceableID pgtype.Text) ([]FindRunTriggersBySourceableIDRow, error)
+	// FindRunTriggersBySourceableIDBatch enqueues a FindRunTriggersBySourceableID query into batch to be executed
+	// later by the batch.
+	FindRunTriggersBySourceableIDBatch(batch genericBatch, sourceableID pgtype.Text)
+	// FindRunTriggersBySourceableIDScan scans the result of an executed FindRunTriggersBySourceableIDBatch query.
+	FindRunTriggersBySourceableIDScan(results pgx.BatchResults) ([]FindRunTriggersBySourceableIDRow, error)
+
+	FindRunTriggersByWorkspaceID(ctx context.Context, workspaceID pgtype.Text) ([]FindRunTriggersByWorkspaceIDRow, error)
+	// FindRunTriggersByWorkspaceIDBatch enqueues a FindRunTriggersByWorkspaceID query into batch to be executed
+	// later by the batch.
+	FindRunTriggersByWorkspaceIDBatch(batch genericBatch, workspaceID pgtype.Text)
+	// FindRunTriggersByWorkspaceIDScan scans the result of an executed FindRunTriggersByWorkspaceIDBatch query.
+	FindRunTriggersByWorkspaceIDScan(results pgx.BatchResults) ([]FindRunTriggersByWorkspaceIDRow, error)
+
+	FindRunTriggerByID(ctx context.Context, runTriggerID pgtype.Text) (FindRunTriggerByIDRow, error)
+	// FindRunTriggerByIDBatch enqueues a FindRunTriggerByID query into batch to be executed
+	// later by the batch.
+	FindRunTriggerByIDBatch(batch genericBatch, runTriggerID pgtype.Text)
+	// FindRunTriggerByIDScan scans the result of an executed FindRunTriggerByIDBatch query.
+	FindRunTriggerByIDScan(results pgx.BatchResults) (FindRunTriggerByIDRow, error)
+
+	DeleteRunTriggerByID(ctx context.Context, runTriggerID pgtype.Text) (pgtype.Text, error)
+	// DeleteRunTriggerByIDBatch enqueues a DeleteRunTriggerByID query into batch to be executed
+	// later by the batch.
+	DeleteRunTriggerByIDBatch(batch genericBatch, runTriggerID pgtype.Text)
+	// DeleteRunTriggerByIDScan scans the result of an executed DeleteRunTriggerByIDBatch query.
+	DeleteRunTriggerByIDScan(results pgx.BatchResults) (pgtype.Text, error)
+
 	InsertStateVersion(ctx context.Context, params InsertStateVersionParams) (pgconn.CommandTag, error)
 	// InsertStateVersionBatch enqueues a InsertStateVersion query into batch to be executed
 	// later by the batch.
@@ -2019,6 +2054,21 @@ func PrepareAllQueries(ctx context.Context, p preparer) error {
 	if _, err := p.Prepare(ctx, deleteRunByIDSQL, deleteRunByIDSQL); err != nil {
 		return fmt.Errorf("prepare query 'DeleteRunByID': %w", err)
 	}
+	if _, err := p.Prepare(ctx, insertRunTriggerSQL, insertRunTriggerSQL); err != nil {
+		return fmt.Errorf("prepare query 'InsertRunTrigger': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findRunTriggersBySourceableIDSQL, findRunTriggersBySourceableIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRunTriggersBySourceableID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findRunTriggersByWorkspaceIDSQL, findRunTriggersByWorkspaceIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRunTriggersByWorkspaceID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, findRunTriggerByIDSQL, findRunTriggerByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'FindRunTriggerByID': %w", err)
+	}
+	if _, err := p.Prepare(ctx, deleteRunTriggerByIDSQL, deleteRunTriggerByIDSQL); err != nil {
+		return fmt.Errorf("prepare query 'DeleteRunTriggerByID': %w", err)
+	}
 	if _, err := p.Prepare(ctx, insertStateVersionSQL, insertStateVersionSQL); err != nil {
 		return fmt.Errorf("prepare query 'InsertStateVersion': %w", err)
 	}
@@ -2536,7 +2586,7 @@ func (tr *typeResolver) newCompositeValue(name string, fields ...compositeField)
 	// names does not equal the number of ValueTranscoders.
 	typ, _ := pgtype.NewCompositeTypeValues(name, fs, vals)
 	if !isBinaryOk {
-		return textPreferrer{typ, name}
+		return textPreferrer{ValueTranscoder: typ, typeName: name}
 	}
 	return typ
 }
@@ -2555,7 +2605,7 @@ func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() p
 	}
 	typ := pgtype.NewArrayType(name, elemOID, elemValFunc)
 	if elemOID == unknownOID {
-		return textPreferrer{typ, name}
+		return textPreferrer{ValueTranscoder: typ, typeName: name}
 	}
 	return typ
 }
@@ -2565,9 +2615,9 @@ func (tr *typeResolver) newArrayValue(name, elemName string, defaultVal func() p
 func (tr *typeResolver) newConfigurationVersionStatusTimestamps() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"configuration_version_status_timestamps",
-		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
-		compositeField{"status", "text", &pgtype.Text{}},
-		compositeField{"timestamp", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{name: "configuration_version_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "status", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "timestamp", typeName: "timestamptz", defaultVal: &pgtype.Timestamptz{}},
 	)
 }
 
@@ -2576,11 +2626,11 @@ func (tr *typeResolver) newConfigurationVersionStatusTimestamps() pgtype.ValueTr
 func (tr *typeResolver) newGithubAppInstalls() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"github_app_installs",
-		compositeField{"github_app_id", "int8", &pgtype.Int8{}},
-		compositeField{"install_id", "int8", &pgtype.Int8{}},
-		compositeField{"username", "text", &pgtype.Text{}},
-		compositeField{"organization", "text", &pgtype.Text{}},
-		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
+		compositeField{name: "github_app_id", typeName: "int8", defaultVal: &pgtype.Int8{}},
+		compositeField{name: "install_id", typeName: "int8", defaultVal: &pgtype.Int8{}},
+		compositeField{name: "username", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "organization", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "vcs_provider_id", typeName: "text", defaultVal: &pgtype.Text{}},
 	)
 }
 
@@ -2589,11 +2639,11 @@ func (tr *typeResolver) newGithubAppInstalls() pgtype.ValueTranscoder {
 func (tr *typeResolver) newGithubApps() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"github_apps",
-		compositeField{"github_app_id", "int8", &pgtype.Int8{}},
-		compositeField{"webhook_secret", "text", &pgtype.Text{}},
-		compositeField{"private_key", "text", &pgtype.Text{}},
-		compositeField{"slug", "text", &pgtype.Text{}},
-		compositeField{"organization", "text", &pgtype.Text{}},
+		compositeField{name: "github_app_id", typeName: "int8", defaultVal: &pgtype.Int8{}},
+		compositeField{name: "webhook_secret", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "private_key", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "slug", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "organization", typeName: "text", defaultVal: &pgtype.Text{}},
 	)
 }
 
@@ -2602,20 +2652,20 @@ func (tr *typeResolver) newGithubApps() pgtype.ValueTranscoder {
 func (tr *typeResolver) newIngressAttributes() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"ingress_attributes",
-		compositeField{"branch", "text", &pgtype.Text{}},
-		compositeField{"commit_sha", "text", &pgtype.Text{}},
-		compositeField{"identifier", "text", &pgtype.Text{}},
-		compositeField{"is_pull_request", "bool", &pgtype.Bool{}},
-		compositeField{"on_default_branch", "bool", &pgtype.Bool{}},
-		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
-		compositeField{"commit_url", "text", &pgtype.Text{}},
-		compositeField{"pull_request_number", "int4", &pgtype.Int4{}},
-		compositeField{"pull_request_url", "text", &pgtype.Text{}},
-		compositeField{"pull_request_title", "text", &pgtype.Text{}},
-		compositeField{"tag", "text", &pgtype.Text{}},
-		compositeField{"sender_username", "text", &pgtype.Text{}},
-		compositeField{"sender_avatar_url", "text", &pgtype.Text{}},
-		compositeField{"sender_html_url", "text", &pgtype.Text{}},
+		compositeField{name: "branch", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "commit_sha", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "identifier", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "is_pull_request", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "on_default_branch", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "configuration_version_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "commit_url", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "pull_request_number", typeName: "int4", defaultVal: &pgtype.Int4{}},
+		compositeField{name: "pull_request_url", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "pull_request_title", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "tag", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "sender_username", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "sender_avatar_url", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "sender_html_url", typeName: "text", defaultVal: &pgtype.Text{}},
 	)
 }
 
@@ -2624,13 +2674,13 @@ func (tr *typeResolver) newIngressAttributes() pgtype.ValueTranscoder {
 func (tr *typeResolver) newModuleVersions() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"module_versions",
-		compositeField{"module_version_id", "text", &pgtype.Text{}},
-		compositeField{"version", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"status", "text", &pgtype.Text{}},
-		compositeField{"status_error", "text", &pgtype.Text{}},
-		compositeField{"module_id", "text", &pgtype.Text{}},
+		compositeField{name: "module_version_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "version", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "created_at", typeName: "timestamptz", defaultVal: &pgtype.Timestamptz{}},
+		compositeField{name: "updated_at", typeName: "timestamptz", defaultVal: &pgtype.Timestamptz{}},
+		compositeField{name: "status", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "status_error", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "module_id", typeName: "text", defaultVal: &pgtype.Text{}},
 	)
 }
 
@@ -2639,10 +2689,10 @@ func (tr *typeResolver) newModuleVersions() pgtype.ValueTranscoder {
 func (tr *typeResolver) newPhaseStatusTimestamps() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"phase_status_timestamps",
-		compositeField{"run_id", "text", &pgtype.Text{}},
-		compositeField{"phase", "text", &pgtype.Text{}},
-		compositeField{"status", "text", &pgtype.Text{}},
-		compositeField{"timestamp", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{name: "run_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "phase", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "status", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "timestamp", typeName: "timestamptz", defaultVal: &pgtype.Timestamptz{}},
 	)
 }
 
@@ -2651,10 +2701,10 @@ func (tr *typeResolver) newPhaseStatusTimestamps() pgtype.ValueTranscoder {
 func (tr *typeResolver) newRepoConnections() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"repo_connections",
-		compositeField{"module_id", "text", &pgtype.Text{}},
-		compositeField{"workspace_id", "text", &pgtype.Text{}},
-		compositeField{"repo_path", "text", &pgtype.Text{}},
-		compositeField{"vcs_provider_id", "text", &pgtype.Text{}},
+		compositeField{name: "module_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "workspace_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "repo_path", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "vcs_provider_id", typeName: "text", defaultVal: &pgtype.Text{}},
 	)
 }
 
@@ -2663,9 +2713,9 @@ func (tr *typeResolver) newRepoConnections() pgtype.ValueTranscoder {
 func (tr *typeResolver) newReport() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"report",
-		compositeField{"additions", "int4", &pgtype.Int4{}},
-		compositeField{"changes", "int4", &pgtype.Int4{}},
-		compositeField{"destructions", "int4", &pgtype.Int4{}},
+		compositeField{name: "additions", typeName: "int4", defaultVal: &pgtype.Int4{}},
+		compositeField{name: "changes", typeName: "int4", defaultVal: &pgtype.Int4{}},
+		compositeField{name: "destructions", typeName: "int4", defaultVal: &pgtype.Int4{}},
 	)
 }
 
@@ -2674,9 +2724,9 @@ func (tr *typeResolver) newReport() pgtype.ValueTranscoder {
 func (tr *typeResolver) newRunStatusTimestamps() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"run_status_timestamps",
-		compositeField{"run_id", "text", &pgtype.Text{}},
-		compositeField{"status", "text", &pgtype.Text{}},
-		compositeField{"timestamp", "timestamptz", &pgtype.Timestamptz{}},
+		compositeField{name: "run_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "status", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "timestamp", typeName: "timestamptz", defaultVal: &pgtype.Timestamptz{}},
 	)
 }
 
@@ -2685,9 +2735,9 @@ func (tr *typeResolver) newRunStatusTimestamps() pgtype.ValueTranscoder {
 func (tr *typeResolver) newRunVariables() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"run_variables",
-		compositeField{"run_id", "text", &pgtype.Text{}},
-		compositeField{"key", "text", &pgtype.Text{}},
-		compositeField{"value", "text", &pgtype.Text{}},
+		compositeField{name: "run_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "key", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "value", typeName: "text", defaultVal: &pgtype.Text{}},
 	)
 }
 
@@ -2696,25 +2746,25 @@ func (tr *typeResolver) newRunVariables() pgtype.ValueTranscoder {
 func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"runs",
-		compositeField{"run_id", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"cancel_signaled_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"is_destroy", "bool", &pgtype.Bool{}},
-		compositeField{"position_in_queue", "int4", &pgtype.Int4{}},
-		compositeField{"refresh", "bool", &pgtype.Bool{}},
-		compositeField{"refresh_only", "bool", &pgtype.Bool{}},
-		compositeField{"replace_addrs", "_text", &pgtype.TextArray{}},
-		compositeField{"target_addrs", "_text", &pgtype.TextArray{}},
-		compositeField{"lock_file", "bytea", &pgtype.Bytea{}},
-		compositeField{"status", "text", &pgtype.Text{}},
-		compositeField{"workspace_id", "text", &pgtype.Text{}},
-		compositeField{"configuration_version_id", "text", &pgtype.Text{}},
-		compositeField{"auto_apply", "bool", &pgtype.Bool{}},
-		compositeField{"plan_only", "bool", &pgtype.Bool{}},
-		compositeField{"created_by", "text", &pgtype.Text{}},
-		compositeField{"source", "text", &pgtype.Text{}},
-		compositeField{"terraform_version", "text", &pgtype.Text{}},
-		compositeField{"allow_empty_apply", "bool", &pgtype.Bool{}},
+		compositeField{name: "run_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "created_at", typeName: "timestamptz", defaultVal: &pgtype.Timestamptz{}},
+		compositeField{name: "cancel_signaled_at", typeName: "timestamptz", defaultVal: &pgtype.Timestamptz{}},
+		compositeField{name: "is_destroy", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "position_in_queue", typeName: "int4", defaultVal: &pgtype.Int4{}},
+		compositeField{name: "refresh", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "refresh_only", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "replace_addrs", typeName: "_text", defaultVal: &pgtype.TextArray{}},
+		compositeField{name: "target_addrs", typeName: "_text", defaultVal: &pgtype.TextArray{}},
+		compositeField{name: "lock_file", typeName: "bytea", defaultVal: &pgtype.Bytea{}},
+		compositeField{name: "status", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "workspace_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "configuration_version_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "auto_apply", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "plan_only", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "created_by", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "source", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "terraform_version", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "allow_empty_apply", typeName: "bool", defaultVal: &pgtype.Bool{}},
 	)
 }
 
@@ -2723,12 +2773,12 @@ func (tr *typeResolver) newRuns() pgtype.ValueTranscoder {
 func (tr *typeResolver) newStateVersionOutputs() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"state_version_outputs",
-		compositeField{"state_version_output_id", "text", &pgtype.Text{}},
-		compositeField{"name", "text", &pgtype.Text{}},
-		compositeField{"sensitive", "bool", &pgtype.Bool{}},
-		compositeField{"type", "text", &pgtype.Text{}},
-		compositeField{"value", "bytea", &pgtype.Bytea{}},
-		compositeField{"state_version_id", "text", &pgtype.Text{}},
+		compositeField{name: "state_version_output_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "name", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "sensitive", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "type", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "value", typeName: "bytea", defaultVal: &pgtype.Bytea{}},
+		compositeField{name: "state_version_id", typeName: "text", defaultVal: &pgtype.Text{}},
 	)
 }
 
@@ -2737,18 +2787,18 @@ func (tr *typeResolver) newStateVersionOutputs() pgtype.ValueTranscoder {
 func (tr *typeResolver) newTeams() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"teams",
-		compositeField{"team_id", "text", &pgtype.Text{}},
-		compositeField{"name", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"permission_manage_workspaces", "bool", &pgtype.Bool{}},
-		compositeField{"permission_manage_vcs", "bool", &pgtype.Bool{}},
-		compositeField{"permission_manage_modules", "bool", &pgtype.Bool{}},
-		compositeField{"organization_name", "text", &pgtype.Text{}},
-		compositeField{"sso_team_id", "text", &pgtype.Text{}},
-		compositeField{"visibility", "text", &pgtype.Text{}},
-		compositeField{"permission_manage_policies", "bool", &pgtype.Bool{}},
-		compositeField{"permission_manage_policy_overrides", "bool", &pgtype.Bool{}},
-		compositeField{"permission_manage_providers", "bool", &pgtype.Bool{}},
+		compositeField{name: "team_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "name", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "created_at", typeName: "timestamptz", defaultVal: &pgtype.Timestamptz{}},
+		compositeField{name: "permission_manage_workspaces", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "permission_manage_vcs", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "permission_manage_modules", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "organization_name", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "sso_team_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "visibility", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "permission_manage_policies", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "permission_manage_policy_overrides", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "permission_manage_providers", typeName: "bool", defaultVal: &pgtype.Bool{}},
 	)
 }
 
@@ -2757,11 +2807,11 @@ func (tr *typeResolver) newTeams() pgtype.ValueTranscoder {
 func (tr *typeResolver) newUsers() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"users",
-		compositeField{"user_id", "text", &pgtype.Text{}},
-		compositeField{"username", "text", &pgtype.Text{}},
-		compositeField{"created_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"updated_at", "timestamptz", &pgtype.Timestamptz{}},
-		compositeField{"site_admin", "bool", &pgtype.Bool{}},
+		compositeField{name: "user_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "username", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "created_at", typeName: "timestamptz", defaultVal: &pgtype.Timestamptz{}},
+		compositeField{name: "updated_at", typeName: "timestamptz", defaultVal: &pgtype.Timestamptz{}},
+		compositeField{name: "site_admin", typeName: "bool", defaultVal: &pgtype.Bool{}},
 	)
 }
 
@@ -2770,14 +2820,14 @@ func (tr *typeResolver) newUsers() pgtype.ValueTranscoder {
 func (tr *typeResolver) newVariables() pgtype.ValueTranscoder {
 	return tr.newCompositeValue(
 		"variables",
-		compositeField{"variable_id", "text", &pgtype.Text{}},
-		compositeField{"key", "text", &pgtype.Text{}},
-		compositeField{"value", "text", &pgtype.Text{}},
-		compositeField{"description", "text", &pgtype.Text{}},
-		compositeField{"category", "text", &pgtype.Text{}},
-		compositeField{"sensitive", "bool", &pgtype.Bool{}},
-		compositeField{"hcl", "bool", &pgtype.Bool{}},
-		compositeField{"version_id", "text", &pgtype.Text{}},
+		compositeField{name: "variable_id", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "key", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "value", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "description", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "category", typeName: "text", defaultVal: &pgtype.Text{}},
+		compositeField{name: "sensitive", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "hcl", typeName: "bool", defaultVal: &pgtype.Bool{}},
+		compositeField{name: "version_id", typeName: "text", defaultVal: &pgtype.Text{}},
 	)
 }
 
@@ -2852,15 +2902,15 @@ const insertAgentSQL = `INSERT INTO agents (
 );`
 
 type InsertAgentParams struct {
-	AgentID      pgtype.Text
-	Name         pgtype.Text
-	Version      pgtype.Text
-	MaxJobs      pgtype.Int4
-	IPAddress    pgtype.Inet
-	LastPingAt   pgtype.Timestamptz
-	LastStatusAt pgtype.Timestamptz
-	Status       pgtype.Text
-	AgentPoolID  pgtype.Text
+	AgentID      pgtype.Text        `json:"agent_id"`
+	Name         pgtype.Text        `json:"name"`
+	Version      pgtype.Text        `json:"version"`
+	MaxJobs      pgtype.Int4        `json:"max_jobs"`
+	IPAddress    pgtype.Inet        `json:"ip_address"`
+	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
+	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
+	Status       pgtype.Text        `json:"status"`
+	AgentPoolID  pgtype.Text        `json:"agent_pool_id"`
 }
 
 // InsertAgent implements Querier.InsertAgent.
@@ -2895,10 +2945,10 @@ WHERE agent_id = $4
 RETURNING *;`
 
 type UpdateAgentParams struct {
-	Status       pgtype.Text
-	LastPingAt   pgtype.Timestamptz
-	LastStatusAt pgtype.Timestamptz
-	AgentID      pgtype.Text
+	Status       pgtype.Text        `json:"status"`
+	LastPingAt   pgtype.Timestamptz `json:"last_ping_at"`
+	LastStatusAt pgtype.Timestamptz `json:"last_status_at"`
+	AgentID      pgtype.Text        `json:"agent_id"`
 }
 
 type UpdateAgentRow struct {
@@ -3390,7 +3440,7 @@ type textPreferrer struct {
 func (t textPreferrer) PreferredParamFormat() int16 { return pgtype.TextFormatCode }
 
 func (t textPreferrer) NewTypeValue() pgtype.Value {
-	return textPreferrer{pgtype.NewValue(t.ValueTranscoder).(pgtype.ValueTranscoder), t.typeName}
+	return textPreferrer{ValueTranscoder: pgtype.NewValue(t.ValueTranscoder).(pgtype.ValueTranscoder), typeName: t.typeName}
 }
 
 func (t textPreferrer) TypeName() string {
